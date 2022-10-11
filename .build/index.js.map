@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../index.ts"],
+  "sourcesContent": ["// this is a library we need, to read text input \"easily\"\nimport prompt from 'prompt-sync';\n\nconst input = prompt();\n\n// these are some codes to get the console to print in colors\n// see more details here:\n// https://bit.ly/3T8YcDQ\nconst Reset = \"\\x1b[0m\";\nconst BgRed = \"\\x1b[41m\";\nconst BgGreen = \"\\x1b[42m\";\nconst BgYellow = \"\\x1b[43m\";\nconst BgBlue = \"\\x1b[44m\";\nconst BgMagenta = \"\\x1b[45m\";\nconst BgCyan = \"\\x1b[46m\";\nconst BgWhite = \"\\x1b[47m\";\n\nconst throwDie = (): number => Math.trunc(Math.random() * 6) + 1;\n\n// this is a small example to show how the pieces fit together\nconst example = (): void => {\n  console.log(`type anything to throw a die, or ${BgRed}'exit'${Reset} to quit`);\n  const command: string = input();\n  if (command == 'exit') {\n    console.log(`${BgGreen}See you next time!${Reset}`);\n  } else {\n    const die = throwDie();\n    console.log(`you threw: ${BgBlue} ${die} ${Reset}`);\n    example();\n  }\n}\n\nexample();"],
+  "mappings": ";;;;;;;;;;;;;;;;;;AACA,yBAAmB;AAEnB,MAAM,QAAQ;AAKd,MAAM,QAAQ;AACd,MAAM,QAAQ;AACd,MAAM,UAAU;AAChB,MAAM,WAAW;AACjB,MAAM,SAAS;AACf,MAAM,YAAY;AAClB,MAAM,SAAS;AACf,MAAM,UAAU;AAEhB,MAAM,WAAW,MAAc,KAAK,MAAM,KAAK,WAAW,KAAK;AAG/D,MAAM,UAAU,MAAY;AAC1B,UAAQ,IAAI,oCAAoC,cAAc;AAC9D,QAAM,UAAkB;AACxB,MAAI,WAAW,QAAQ;AACrB,YAAQ,IAAI,GAAG,4BAA4B;AAAA,SACtC;AACL,UAAM,MAAM;AACZ,YAAQ,IAAI,cAAc,UAAU,OAAO;AAC3C;AAAA;AAAA;AAIJ;",
+  "names": []
+}
