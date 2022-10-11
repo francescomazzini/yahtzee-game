@@ -69,6 +69,7 @@ const getNumberOfPlayer = (): number => {
 //referring to any possible and needed state of the game
 const game = (): void => {
   const players: Player[] = startGame();
+  console.log(players);
 }
 
 game();

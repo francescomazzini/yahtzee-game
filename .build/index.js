@@ -26,17 +26,39 @@ const BgBlue = "[44m";
 const BgMagenta = "[45m";
 const BgCyan = "[46m";
 const BgWhite = "[47m";
-const throwDie = () => Math.trunc(Math.random() * 6) + 1;
-const example = () => {
-  console.log(`type anything to throw a die, or ${BgRed}'exit'${Reset} to quit`);
-  const command = input();
-  if (command == "exit") {
-    console.log(`${BgGreen}See you next time!${Reset}`);
-  } else {
-    const die = throwDie();
-    console.log(`you threw: ${BgBlue} ${die} ${Reset}`);
-    example();
+const createPlayer = (players, numberNewPlayer) => {
+  if (numberNewPlayer < 1)
+    return players;
+  return [...createPlayer(players, numberNewPlayer - 1), {
+    color: `[4${numberNewPlayer + 1}m`,
+    score: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  }];
+};
+const startGame = () => {
+  console.log("Welcome to Yahtzee Game!");
+  const numberOfPlayers = getNumberOfPlayer();
+  return createPlayer([], numberOfPlayers);
+};
+const getNumberOfPlayer = () => {
+  const answer = input(`How many people are going to play? (1-4) `);
+  switch (answer) {
+    case "1":
+      return 1;
+    case "2":
+      return 2;
+    case "3":
+      return 3;
+    case "4":
+      return 4;
+    default: {
+      console.log("Invalid number, please choose a number of players(1-4) ");
+      return getNumberOfPlayer();
+    }
   }
 };
-example();
+const game = () => {
+  const players = startGame();
+  console.log(players);
+};
+game();
 //# sourceMappingURL=index.js.map
