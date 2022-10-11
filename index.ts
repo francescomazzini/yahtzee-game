@@ -23,13 +23,15 @@ interface Player {
   score: number[]
 }
 
+const N_DIES: number = 5;
+
 type Die = 1 | 2 | 3 | 4 | 5 | 6;
 
 //this function creates the number of player wanted and set up their colors and score (default value)
-const createPlayer = (players: Player[], numberNewPlayer: number): Player[] => {
+const createPlayer = (numberNewPlayer: number): Player[] => {
 
   if (numberNewPlayer < 1)
-    return players;
+    return [];
 
   return [...createPlayer(players, numberNewPlayer - 1), {
     color:
@@ -48,7 +50,7 @@ const startGame = (): Player[] => {
 
   const numberOfPlayers: number = getNumberOfPlayer();
 
-  return createPlayer([], numberOfPlayers);
+  return createPlayer(numberOfPlayers);
 
 }
 
@@ -69,23 +71,41 @@ const getNumberOfPlayer = (): number => {
   }
 }
 
-//this function manages the turn of a player in which he rolls dies
-const turn = (currentPlayer : Player, numberRound : 1 | 2 | 3 /*| 4?*/, dice : Die[]) : Player => {
+//this functions roll a number of dice
+const rollDice = (numberDice : number) : Die[] => {
+  if(numberDice < 1)
+    return [];
+  else
+    return [(Math.trunc(Math.random() * 6) + 1) as Die, ...rollDice(numberDice-1)];
+}
 
-  // currentDice = [...dice, rollDice(dice.length)]
-  
+//this function manages the turn of a player in which he rolls dies
+const turn = (currentPlayer: Player, numberRound: 1 | 2 | 3 /*| 4?*/, dice: Die[]): Player => {
+
+  const tempDice: Die[] = [...dice, ...rollDice(N_DIES - dice.length)];
+
+  if (numberRound !== 3) {
+    //quali vuoi tenere?
+    const keptDice: Die[] = whichDiceToKeep(tempDice);
+  } else {
+    //calcola punteggio
+    //chiedi per quale vuole mettere i punti
+    //inserisci i punti
+    // ritorna il player
+  }
+
 }
 
 //this function manages all the middle part of the game in which players actually play
-const midGame = (players : Player[], playerNumber : number) : Player[] | null => {
+const midGame = (players: Player[], playerNumber: number): Player[] | null => {
 
   //print
   //chiama il turn del primo player
   //se non ci sta un winner continua col player dopo richiamando ricorsivamente questa funzione che si ferma solo quando il gioco potrebbe esser finito. Passa il player del turno a turn()
 
-  
-  
-  
+
+
+
   return null;
 }
 
@@ -96,7 +116,7 @@ const game = (): void => {
 
   //return the winner(s) or null if there's a total draw
   const winner: Player[] | null = midGame(players, 0);
-  
+
 }
 
 game();
