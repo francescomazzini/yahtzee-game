@@ -23,6 +23,8 @@ interface Player {
   score: number[]
 }
 
+type Die = 1 | 2 | 3 | 4 | 5 | 6;
+
 //this function creates the number of player wanted and set up their colors and score (default value)
 const createPlayer = (players: Player[], numberNewPlayer: number): Player[] => {
 
@@ -41,6 +43,8 @@ const createPlayer = (players: Player[], numberNewPlayer: number): Player[] => {
 const startGame = (): Player[] => {
 
   console.log('Welcome to Yahtzee Game!');
+
+  //magari dovrei separare e emettere questo in un'altra funzione per ridurre l'uso dell'interazione
 
   const numberOfPlayers: number = getNumberOfPlayer();
 
@@ -65,11 +69,34 @@ const getNumberOfPlayer = (): number => {
   }
 }
 
+//this function manages the turn of a player in which he rolls dies
+const turn = (currentPlayer : Player, numberRound : 1 | 2 | 3 /*| 4?*/, dice : Die[]) : Player => {
+
+  // currentDice = [...dice, rollDice(dice.length)]
+  
+}
+
+//this function manages all the middle part of the game in which players actually play
+const midGame = (players : Player[], playerNumber : number) : Player[] | null => {
+
+  //print
+  //chiama il turn del primo player
+  //se non ci sta un winner continua col player dopo richiamando ricorsivamente questa funzione che si ferma solo quando il gioco potrebbe esser finito. Passa il player del turno a turn()
+
+  
+  
+  
+  return null;
+}
+
 //this function will manage the structure of the game itself
 //referring to any possible and needed state of the game
 const game = (): void => {
   const players: Player[] = startGame();
-  console.log(players);
+
+  //return the winner(s) or null if there's a total draw
+  const winner: Player[] | null = midGame(players, 0);
+  
 }
 
 game();
