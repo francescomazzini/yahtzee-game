@@ -33,7 +33,7 @@ const createPlayer = (numberNewPlayer: number): Player[] => {
   if (numberNewPlayer < 1)
     return [];
 
-  return [...createPlayer(players, numberNewPlayer - 1), {
+  return [...createPlayer(numberNewPlayer - 1), {
     color:
       `\x1b[4${numberNewPlayer + 1}m`, score: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   }];
@@ -79,20 +79,84 @@ const rollDice = (numberDice: number): Die[] => {
     return [(Math.trunc(Math.random() * 6) + 1) as Die, ...rollDice(numberDice - 1)];
 }
 
+const whichDieToKeep = ([index1, ...indexes]: number[], dice: Die[]): Die[] => {
+  if (indexes.length !== 0)
+    return [dice[index1], ...whichDieToKeep(indexes, dice)];
+
+  return [];
+}
+
+const indexOfDie = (): number => {
+
+  const answer = input("Which of the dice, would you like to keep? Write its number (1-5) or write 0 to stop choosing (if you don't want any, write immediately 0)");
+
+  switch (answer) {
+    case '0':
+      return 0;
+    case '1':
+      return 1;
+    case '2':
+      return 2;
+    case '3':
+      return 3;
+    case '4':
+      return 4;
+    case '5':
+      return 5;
+    default: {
+      console.log("Invalid number, please choose a number netween 1-5 or 0 ");
+      return indexOfDie();
+    }
+  }
+
+}
+
+const indexOfDice = (counter: number, indexes: number[]): number[] => {
+
+  if (counter > 5)
+    return [];
+
+  const index = indexOfDie();
+
+  if (index !== 0) {
+    //farei qua che prende l'indice e poi un controllo dopo e poi un return dopo dopo come stavo facendo ma no nso se va bene
+    if (indexes.some((i: number) => i === index)) {
+      console.log("You can't choose the same die twice");
+      return [index, ...indexOfDice(counter,)];
+    } else
+      return [index, ...indexOfDice(counter + 1)];
+  }
+
+  return [];
+
+}
+
+const askDiceToKeep = (dice: Die[]): Die[] => {
+
+  const
+
+}
+
 //this function manages the turn of a player in which he rolls dies
 const turn = (currentPlayer: Player, numberRound: 1 | 2 | 3 /*| 4?*/, dice: Die[]): Player => {
 
   const tempDice: Die[] = [...dice, ...rollDice(N_DIES - dice.length)];
 
   if (numberRound !== 3) {
+    //stampa i dice attuali
     //quali vuoi tenere?
-    const keptDice: Die[] = whichDiceToKeep(tempDice);
+    //ricordati di mappare gli indexes a meno 1 per lo user che li mette da 1...x
+    //controlla che la lunghezza degli index non sia 5 se no si tiene tutto
+    //mi sa che tutta  sta roba va messa in which die to keep e poi lo scompongo
+    const keptDice: Die[] = askDiceToKeep(tempDice);
   } else {
     //calcola punteggio
     //chiedi per quale vuole mettere i punti
     //inserisci i punti
     // ritorna il player
   }
+
+  return { color: "asa", score: [0, 0] };
 
 }
 
