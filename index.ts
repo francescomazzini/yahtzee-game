@@ -72,11 +72,11 @@ const getNumberOfPlayer = (): number => {
 }
 
 //this functions roll a number of dice
-const rollDice = (numberDice : number) : Die[] => {
-  if(numberDice < 1)
+const rollDice = (numberDice: number): Die[] => {
+  if (numberDice < 1)
     return [];
   else
-    return [(Math.trunc(Math.random() * 6) + 1) as Die, ...rollDice(numberDice-1)];
+    return [(Math.trunc(Math.random() * 6) + 1) as Die, ...rollDice(numberDice - 1)];
 }
 
 //this function manages the turn of a player in which he rolls dies
