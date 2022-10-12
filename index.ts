@@ -91,7 +91,9 @@ const whichDieToKeep = ([index1, ...indexes]: number[], dice: Die[]): Die[] => {
 //this function asks the user one die to keep and manages the check on the input
 const indexOfDie = (): number => {
 
-  const answer = input("Which of the dice, would you like to keep? Write its number (1-5) or write 0 to stop choosing (if you don't want any, write immediately 0)");
+  console.log(`Which of the dice, would you like to keep? Write its number (1-5) or write 0 to stop choosing (if you don't want any, write immediately 0)`)
+
+  const answer = input();
 
   switch (answer) {
     case '0':
@@ -108,9 +110,11 @@ const indexOfDie = (): number => {
       return 5;
     default: {
       console.log("Invalid number, please choose a number between 1-5 or 0 ");
-      return indexOfDie();
     }
+
   }
+
+  return indexOfDie();
 
 }
 
@@ -132,6 +136,7 @@ const indexOfDice = (counter: number, indexes: number[]): number[] => {
   }
 
   return [];
+
 
 }
 
