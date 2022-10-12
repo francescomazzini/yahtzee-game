@@ -249,8 +249,46 @@ const getScoreComputation = (combination: number): fromDiceToScore => {
         return isThereAtLeastN ? dice.reduce((sum: number, d: Die) => sum + d, 0) : 0;
       }
     case 8:
-      
+      //posso mappare per le frequenze e fare un some se ci sta un 3 && some se ci sta un 2
+      return (dice: Die[]) : number => {
 
+        ///POSSO GENERALIZZARE QUESTO FREQUENCY MAP E ISTHERE?
+        const frequencyMap : number[] = dice.map((die: Die): number => dice.reduce((sum: number, d1: Die) => sum + d1 === die ? 1 : 0, 0));
+        const isThere3: boolean = frequencyMap.some((n: number) => n === 3);
+        const isThere2: boolean = frequencyMap.some((n: number) => n === 2);
+        
+        return isThere3 && isThere3 ? 25 : 0;
+      }
+
+      //QUA POSSO GENERALIZZARE SOTTO I DUE CASE E CREARE LA FUNZIONE E PER I DUE CASE DIVERSI MODIFICARE IL PEZZETTO PASSANDO LA FUNZIONE E IL PUNTEGGIO CREDO
+    case 9:
+
+      return (dice : Die[]) : number => {
+        const isSmallStr = dice.reduce((isIt: boolean, d : Die, i : number, ds : Die[]) : boolean =>  {
+          if(i < ds.length && i > 0)
+            isIt = isIt && d === (ds[i+1] -1);  
+          else
+            isIt = isIt && (ds[0] === (ds[1]-1) || ds[ds.length] === (ds[ds.length-1]+1));
+        }, true)
+
+        return isSmallStr ? 30 : 0;
+      }
+
+    case 10:
+
+      return (dice : Die[]) : number => {
+        const isSmallStr = dice.reduce((isIt: boolean, d : Die, i : number, ds : Die[]) : boolean =>  {
+          if(i < ds.length)
+            isIt = isIt && d === (ds[i+1] -1);  
+          else
+            isIt = isIt && ds[ds.length] === (ds[ds.length-1]+1);
+        }, true)
+
+        return isSmallStr ? 30 : 0;
+      }
+
+    case 11:
+      
     
   }
 
