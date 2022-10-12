@@ -120,7 +120,7 @@ const indexOfDice = (counter: number, indexes: number[]): number[] => {
   if (counter > 5)
     return [];
 
-  const index : number = indexOfDie();
+  const index: number = indexOfDie();
 
   if (index !== 0) {
 
@@ -144,7 +144,9 @@ const askDiceToKeep = (dice: Die[]): Die[] => {
   console.log("Their values are: ");
   console.log(dice);
 
-  const newDice : Die[] = whichDieToKeep(indexOfDice.map((i :  number) => i-1;), dice);
+  const indexDiceKeep: number[] = indexOfDice(1, []);
+  const newDice: Die[] = indexDiceKeep.length === 5 ? dice
+    : whichDieToKeep(indexDiceKeep.map((i: number) => i - 1), dice);
 
   console.log("You kept the following dice: ");
   console.log(newDice);
@@ -153,21 +155,18 @@ const askDiceToKeep = (dice: Die[]): Die[] => {
 
 }
 
-//this function manages the turn of a player in which he rolls dies
+//this function manages the turn of a player in which he rolls dice
 const turn = (currentPlayer: Player, numberRound: 1 | 2 | 3 /*| 4?*/, dice: Die[]): Player => {
 
   const tempDice: Die[] = [...dice, ...rollDice(N_DIES - dice.length)];
 
   if (numberRound !== 3) {
-    //stampa i dice attuali
-    //quali vuoi tenere?
-    //ricordati di mappare gli indexes a meno 1 per lo user che li mette da 1...x
-    //controlla che la lunghezza degli index non sia 5 se no si tiene tutto
-    //mi sa che tutta  sta roba va messa in which die to keep e poi lo scompongo
     const keptDice: Die[] = askDiceToKeep(tempDice);
   } else {
-    //calcola punteggio
+
+
     //chiedi per quale vuole mettere i punti
+    //calcola punteggio
     //inserisci i punti
     // ritorna il player
   }
@@ -178,6 +177,8 @@ const turn = (currentPlayer: Player, numberRound: 1 | 2 | 3 /*| 4?*/, dice: Die[
 
 //this function manages all the middle part of the game in which players actually play
 const midGame = (players: Player[], playerNumber: number): Player[] | null => {
+
+  turn(players[playerNumber], 1, []);
 
   //print
   //chiama il turn del primo player
