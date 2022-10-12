@@ -79,6 +79,8 @@ const rollDice = (numberDice: number): Die[] => {
     return [(Math.trunc(Math.random() * 6) + 1) as Die, ...rollDice(numberDice - 1)];
 }
 
+//this function recursively use the indexes to generate the new array
+//of dice that the user wanted to keep
 const whichDieToKeep = ([index1, ...indexes]: number[], dice: Die[]): Die[] => {
   if (indexes.length !== 0)
     return [dice[index1], ...whichDieToKeep(indexes, dice)];
@@ -86,6 +88,7 @@ const whichDieToKeep = ([index1, ...indexes]: number[], dice: Die[]): Die[] => {
   return [];
 }
 
+//this function asks the user one die to keep and manages the check on the input
 const indexOfDie = (): number => {
 
   const answer = input("Which of the dice, would you like to keep? Write its number (1-5) or write 0 to stop choosing (if you don't want any, write immediately 0)");
@@ -104,36 +107,49 @@ const indexOfDie = (): number => {
     case '5':
       return 5;
     default: {
-      console.log("Invalid number, please choose a number netween 1-5 or 0 ");
+      console.log("Invalid number, please choose a number between 1-5 or 0 ");
       return indexOfDie();
     }
   }
 
 }
 
+//this function gathers all the indexes for the dice that the user wants to keep
 const indexOfDice = (counter: number, indexes: number[]): number[] => {
 
   if (counter > 5)
     return [];
 
-  const index = indexOfDie();
+  const index : number = indexOfDie();
 
   if (index !== 0) {
-    //farei qua che prende l'indice e poi un controllo dopo e poi un return dopo dopo come stavo facendo ma no nso se va bene
+
     if (indexes.some((i: number) => i === index)) {
       console.log("You can't choose the same die twice");
-      return [index, ...indexOfDice(counter,)];
+      return [...indexOfDice(counter, indexes)];
     } else
-      return [index, ...indexOfDice(counter + 1)];
+      return [index, ...indexOfDice(counter + 1, [index, ...indexes])];
   }
 
   return [];
 
 }
 
+//this function manages the functions for deciding which die to keep. 
+//It also maps their indexes because the user inserts them from 1 to 5 
+//and instead they are needed from 0 to 4
 const askDiceToKeep = (dice: Die[]): Die[] => {
 
-  const
+  console.log("The dice have been rolled");
+  console.log("Their values are: ");
+  console.log(dice);
+
+  const newDice : Die[] = whichDieToKeep(indexOfDice.map((i :  number) => i-1;), dice);
+
+  console.log("You kept the following dice: ");
+  console.log(newDice);
+
+  return newDice;
 
 }
 
