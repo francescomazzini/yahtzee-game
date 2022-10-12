@@ -95,6 +95,8 @@ const indexOfDie = (): number => {
 
   const answer = input();
 
+  //VALUTA IL RAGGRUPPARE QUESTI SWITCH IN UNA FUNZIONE, MAGARI HIGH ORDER FUNCTIONS???
+
   switch (answer) {
     case '0':
       return 0;
@@ -121,7 +123,7 @@ const indexOfDie = (): number => {
 //this function gathers all the indexes for the dice that the user wants to keep
 const indexOfDice = (counter: number, indexes: number[]): number[] => {
 
-  if (counter > 5)
+  if (counter > N_DIES)
     return [];
 
   const index: number = indexOfDie();
@@ -137,7 +139,6 @@ const indexOfDice = (counter: number, indexes: number[]): number[] => {
 
   return [];
 
-
 }
 
 //this function manages the functions for deciding which die to keep. 
@@ -150,7 +151,7 @@ const askDiceToKeep = (dice: Die[]): Die[] => {
   console.log(dice);
 
   const indexDiceKeep: number[] = indexOfDice(1, []);
-  const newDice: Die[] = indexDiceKeep.length === 5 ? dice
+  const newDice: Die[] = indexDiceKeep.length === N_DIES ? dice
     : whichDieToKeep(indexDiceKeep.map((i: number) => i - 1), dice);
 
   console.log("You kept the following dice: ");
@@ -160,15 +161,115 @@ const askDiceToKeep = (dice: Die[]): Die[] => {
 
 }
 
+//this function takes care to transform the combination chosen as a string to a number that refers to the cell of the array of the score owned by the player
+const transformCombination = (): number => {
+
+  console.log(`Which of the combination, you'd like to assign your dice points?`)
+
+  const answer = input();
+
+  //VALUTA IL RAGGRUPPARE QUESTI SWITCH IN UNA FUNZIONE, MAGARI HIGH ORDER FUNCTIONS???
+
+  switch (answer) {
+    case 'Ones':
+      return 0;
+    case 'Twos':
+      return 1;
+    case 'Threes':
+      return 2;
+    case 'Fours':
+      return 3;
+    case 'Fives':
+      return 4;
+    case 'Sixes':
+      return 5;
+    case 'Sum':
+      return 6;
+    case 'Bonus':
+      return 7;
+    case 'Three of a kind':
+      return 8;
+    case 'Four of a kind':
+      return 9;
+    case 'Full House':
+      return 10;
+    case 'Small straight':
+      return 11;
+    case 'Large straight':
+      return 12;
+    case 'Chance':
+      return 13;
+    case 'YAHTZEE':
+      return 14;
+    default: {
+      console.log("Invalid choice, you must use the names of the combinations, displayed in the point table");
+    }
+
+  }
+
+  return transformCombination();
+
+}
+
+//this function takes care of all of the process of asking in which combination wants now the player put its gaines points and its main task is to check that the user is not trying to put the points on a combination already filled
+const askCombination = ({ score, ...player }: Player): number => {
+
+  const combinationChosen: number = transformCombination();
+
+  if (score[combinationChosen] !== 0) {
+    console.log("You can't assign the score to this combination because you already did in the past! Please choose another one");
+    return askCombination({ score, ...player });
+  }
+
+  return combinationChosen;
+
+}
+
+//all the functions that are going to take care to evaluate the number of points will be of the following type
+type fromDiceToScore = (arg: Die[]) => number;
+
+//this function will take care to convert the combination of the Dies chosen in its score
+const getScoreComputation = (combination: number): fromDiceToScore => {
+
+  switch (combination) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+      return (dice: Die[]): number => dice.filter((d: Die) => d === (combination + 1)).reduce((sum: number, d: Die) => sum + d, 0);
+    case 6:
+    case 7:
+      return (dice: Die[]): number => {
+
+        const condition: boolean = dice.map((die: Die): number => dice.reduce((sum: number, d1: Die) => sum + d1 === die ? 1 : 0, 0)).some((n: number) => n >= (combination - 3));
+
+        return condition ? dice.reduce((sum: number, d: Die) => sum + d, 0) : 0;
+      }
+
+
+    // myshapes.reduce((sum: number, shape: Shape) => sum + calcArea(shape)), 0
+  }
+
+}
+
 //this function manages the turn of a player in which he rolls dice
 const turn = (currentPlayer: Player, numberRound: 1 | 2 | 3 /*| 4?*/, dice: Die[]): Player => {
 
   const tempDice: Die[] = [...dice, ...rollDice(N_DIES - dice.length)];
 
+
   if (numberRound !== 3) {
     const keptDice: Die[] = askDiceToKeep(tempDice);
+
+    if (keptDice.length === N_DIES)
+      return turn(currentPlayer, 3, keptDice);
   } else {
 
+    const combination: number = askCombination(currentPlayer);
+
+    return setPlayerScore(getScoreComputation(combination), combination, currentPlayer);
 
     //chiedi per quale vuole mettere i punti
     //calcola punteggio
