@@ -243,13 +243,15 @@ const getScoreComputation = (combination: number): fromDiceToScore => {
     case 7:
       return (dice: Die[]): number => {
 
-        const condition: boolean = dice.map((die: Die): number => dice.reduce((sum: number, d1: Die) => sum + d1 === die ? 1 : 0, 0)).some((n: number) => n >= (combination - 3));
+        const frequencyMap : number[] = dice.map((die: Die): number => dice.reduce((sum: number, d1: Die) => sum + d1 === die ? 1 : 0, 0));
+        const isThereAtLeastN: boolean = frequencyMap.some((n: number) => n >= (combination - 3));
 
-        return condition ? dice.reduce((sum: number, d: Die) => sum + d, 0) : 0;
+        return isThereAtLeastN ? dice.reduce((sum: number, d: Die) => sum + d, 0) : 0;
       }
+    case 8:
+      
 
-
-    // myshapes.reduce((sum: number, shape: Shape) => sum + calcArea(shape)), 0
+    
   }
 
 }
