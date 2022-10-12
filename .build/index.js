@@ -64,7 +64,7 @@ const rollDice = (numberDice) => {
     return [Math.trunc(Math.random() * 6) + 1, ...rollDice(numberDice - 1)];
 };
 const whichDieToKeep = ([index1, ...indexes], dice) => {
-  if (indexes.length !== 0)
+  if (index1 !== void 0)
     return [dice[index1], ...whichDieToKeep(indexes, dice)];
   return [];
 };

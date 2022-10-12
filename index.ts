@@ -82,7 +82,7 @@ const rollDice = (numberDice: number): Die[] => {
 //this function recursively use the indexes to generate the new array
 //of dice that the user wanted to keep
 const whichDieToKeep = ([index1, ...indexes]: number[], dice: Die[]): Die[] => {
-  if (indexes.length !== 0)
+  if (index1 !== undefined)
     return [dice[index1], ...whichDieToKeep(indexes, dice)];
 
   return [];
