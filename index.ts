@@ -303,6 +303,14 @@ const getScoreComputation = (combination: number): fromDiceToScore => {
 
 }
 
+//this function manages the update of the player score
+const newPlayerScore = (converter : fromDiceToScore, combination : number, {score, ...player} : Player, dice : Die[]) : Player => {
+
+  const [score[combination], ...score] = score;
+  
+  return {score: [fromDiceToScore(dice), ...score], ...player};
+}
+
 //this function manages the turn of a player in which he rolls dice
 const turn = (currentPlayer: Player, numberRound: 1 | 2 | 3 /*| 4?*/, dice: Die[]): Player => {
 
@@ -318,31 +326,29 @@ const turn = (currentPlayer: Player, numberRound: 1 | 2 | 3 /*| 4?*/, dice: Die[
 
     const combination: number = askCombination(currentPlayer);
 
-    return setPlayerScore(getScoreComputation(combination), combination, currentPlayer);
+    return newPlayerScore(getScoreComputation(combination), combination, currentPlayer, tempDice);
 
-    //chiedi per quale vuole mettere i punti
-    //calcola punteggio
-    //inserisci i punti
-    // ritorna il player
   }
-
-  return { color: "asa", score: [0, 0] };
 
 }
 
+const getWinner(players: Player[]) : Player[] => {
+  return players.map((player : Player[], i : number) => ({player: player, num: i}))
+}
+
 //this function manages all the middle part of the game in which players actually play
-const midGame = (players: Player[], playerNumber: number): Player[] | null => {
+const midGame = (players: Player[], playerNumber: number, numberRound: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 ): Player[] | null => {
 
-  turn(players[playerNumber], 1, []);
+  if(playerNumber === 0 && numberRound === 14 )
+    return getWinner(players);
 
-  //print
-  //chiama il turn del primo player
-  //se non ci sta un winner continua col player dopo richiamando ricorsivamente questa funzione che si ferma solo quando il gioco potrebbe esser finito. Passa il player del turno a turn()
+  const [players[playerNumber], ...players] = players;
 
+  const newPlayersState : Player = [turn(players[playerNumber]), 1];
 
+  const next : number = (playerNumber + 1) % players.length;
 
-
-  return null;
+  return midGame(newPlayersState, next, next === 0 ? numberRound + 1 : numberRound);
 }
 
 //this function will manage the structure of the game itself
@@ -353,6 +359,7 @@ const game = (): void => {
   //return the winner(s) or null if there's a total draw
   const winner: Player[] | null = midGame(players, 0);
 
+  //fai funzione announcewinner che controlla se ne e' piu' di uno con lo stesso score o solo uno e in caso scrive la cosa adatt
 }
 
 game();
