@@ -130,9 +130,6 @@ const indexOfDice = (counter, indexes) => {
   return [];
 };
 const askDiceToKeep = (dice) => {
-  console.log("The dice have been rolled");
-  console.log("Their values are: ");
-  console.log(dice);
   const indexDiceKeep = indexOfDice(1, []);
   const newDice = indexDiceKeep.length === N_DIES ? dice : whichDieToKeep(indexDiceKeep.map((i) => i - 1), dice);
   console.log("You kept the following dice: ");
@@ -214,25 +211,30 @@ const getScoreComputation = (combination) => {
     }
     case 9:
       return (dice) => {
-        const isSmallStr = dice.reduce((isIt, d, i, ds) => {
-          if (i < ds.length && i > 0)
+        const sortedDice = [...dice].sort((a, b) => a - b);
+        const isSmallStr = [...new Set(sortedDice)].reduce((isIt, d, i, ds) => {
+          if (i < ds.length - 1 && i > 0)
             isIt = isIt && d === ds[i + 1] - 1;
           else
-            isIt = isIt && (ds[0] === ds[1] - 1 || ds[ds.length] === ds[ds.length - 1] + 1);
-          return isIt;
+            isIt = isIt && (ds[0] === ds[1] - 1 || ds[ds.length - 2] === ds[ds.length - 3] + 1 || ds[ds.length - 1] === ds[ds.length - 2] + 1);
+          console.log(isIt);
+          return isIt && ds.length >= 4;
         }, true);
+        console.log(dice);
+        console.log([...dice].sort((a, b) => a - b));
+        console.log(isSmallStr);
         return isSmallStr ? 30 : 0;
       };
     case 10:
       return (dice) => {
-        const isSmallStr = dice.reduce((isIt, d, i, ds) => {
+        const isLargeStr = [...dice].sort((a, b) => a - b).reduce((isIt, d, i, ds) => {
           if (i < ds.length)
             isIt = isIt && d === ds[i + 1] - 1;
           else
-            isIt = isIt && ds[ds.length] === ds[ds.length - 1] + 1;
+            isIt = isIt && ds[ds.length - 1] === ds[ds.length - 2] + 1;
           return isIt;
         }, true);
-        return isSmallStr ? 30 : 0;
+        return isLargeStr ? 40 : 0;
       };
     case 11:
       return (dice) => dice.reduce((sum, d) => sum + d, 0);
@@ -253,10 +255,14 @@ const newPlayerScore = (converter, combination, _c, dice) => {
 };
 const turn = (currentPlayer, numberRound, dice) => {
   const tempDice = [...dice, ...rollDice(N_DIES - dice.length)];
+  console.log("The dice have been rolled");
+  console.log("Their values are: ");
+  console.log(tempDice);
   if (numberRound !== 3) {
     const keptDice = askDiceToKeep(tempDice);
     if (keptDice.length === N_DIES)
       return turn(currentPlayer, 3, keptDice);
+    return turn(currentPlayer, numberRound + 1, keptDice);
   } else {
     const combination = askCombination(currentPlayer);
     return newPlayerScore(getScoreComputation(combination), combination, currentPlayer, tempDice);
@@ -268,11 +274,15 @@ const getWinner = (players) => {
     player,
     total: player.score.reduce((sum, n) => sum = sum + n, 0)
   })).sort((p1, p2) => p2.total - p1.total);
-  return sortedByPoints.filter(({ player, total }) => total === sortedByPoints[0].total).map(({ player, score }) => player);
+  return sortedByPoints.filter(({ player, total }) => total === sortedByPoints[0].total).map(({ player, total }) => player);
 };
 const midGame = (players, playerNumber, numberRound) => {
   if (playerNumber === 0 && numberRound === 14)
     return getWinner(players);
+  if (playerNumber === 0)
+    console.log("Turn Number #" + numberRound);
+  console.log(players);
+  console.log("It's your turn, color " + getColor(players[playerNumber].color));
   const newPlayerState = turn(players[playerNumber], 1, []);
   const newPlayers = players;
   newPlayers[playerNumber] = newPlayerState;

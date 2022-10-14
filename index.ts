@@ -146,10 +146,6 @@ const indexOfDice = (counter: number, indexes: number[]): number[] => {
 //and instead they are needed from 0 to 4
 const askDiceToKeep = (dice: Die[]): Die[] => {
 
-  console.log("The dice have been rolled");
-  console.log("Their values are: ");
-  console.log(dice);
-
   const indexDiceKeep: number[] = indexOfDice(1, []);
   const newDice: Die[] = indexDiceKeep.length === N_DIES ? dice
     : whichDieToKeep(indexDiceKeep.map((i: number) => i - 1), dice);
@@ -265,38 +261,47 @@ const getScoreComputation = (combination: number): fromDiceToScore => {
 
     //QUA POSSO GENERALIZZARE SOTTO I DUE CASE E CREARE LA FUNZIONE E PER I DUE CASE DIVERSI MODIFICARE IL PEZZETTO PASSANDO LA FUNZIONE E IL PUNTEGGIO CREDO
     case 9:
-
+      //forse errori ricontrolla indici
       return (dice: Die[]): number => {
-        const isSmallStr = dice.reduce((isIt: boolean, d: Die, i: number, ds: Die[]): boolean => {
-          if (i < ds.length && i > 0)
+        const sortedDice: Die[] = [...dice].sort((a: number, b: number) => a - b)
+
+        const isSmallStr: boolean = [...new Set(sortedDice)].reduce((isIt: boolean, d: Die, i: number, ds: Die[]): boolean => {
+          if (i < ds.length - 1 && i > 0)
             isIt = isIt && d === (ds[i + 1] - 1);
           else
-            isIt = isIt && (ds[0] === (ds[1] - 1) || ds[ds.length] === (ds[ds.length - 1] + 1));
-          return isIt;
+            isIt = isIt && (ds[0] === (ds[1] - 1) || ds[ds.length - 2] === (ds[ds.length - 3] + 1) || ds[ds.length - 1] === (ds[ds.length - 2] + 1));
+          console.log(isIt)
+          return isIt && ds.length >= 4;
         }, true)
+
+        console.log(dice);
+        console.log([...dice].sort((a: number, b: number) => a - b));
+        console.log(isSmallStr);
 
         return isSmallStr ? 30 : 0;
       }
 
     case 10:
-
+      //forse errori ricontrolla indici
       return (dice: Die[]): number => {
-        const isSmallStr = dice.reduce((isIt: boolean, d: Die, i: number, ds: Die[]): boolean => {
-          if (i < ds.length)
+        const isLargeStr = [...dice].sort((a: number, b: number) => a - b).reduce((isIt: boolean, d: Die, i: number, ds: Die[]): boolean => {
+          if (i < ds.length - 1)
             isIt = isIt && d === (ds[i + 1] - 1);
           else
-            isIt = isIt && ds[ds.length] === (ds[ds.length - 1] + 1);
+            isIt = isIt && ds[ds.length - 1] === (ds[ds.length - 2] + 1);
 
           return isIt;
         }, true)
 
-        return isSmallStr ? 30 : 0;
+        return isLargeStr ? 40 : 0;
       }
 
     case 11:
+      //wrappa la sum con le altre funzioni che la usano
       return (dice: Die[]): number => dice.reduce((sum: number, d: Die): number => sum + d, 0);
 
     case 12:
+      //qua anche pensodi poter wrappare
       return (dice: Die[]): number => {
         const frequencyMap: number[] = dice.map((die: Die): number => dice.reduce((sum: number, d1: Die) => sum + d1 === die ? 1 : 0, 0));
         const isThere5: boolean = frequencyMap.some((n: number) => n === 5);
@@ -321,16 +326,22 @@ const newPlayerScore = (converter: fromDiceToScore, combination: number, { score
 }
 
 //this function manages the turn of a player in which he rolls dice
-const turn = (currentPlayer: Player, numberRound: 1 | 2 | 3 /*| 4?*/, dice: Die[]): Player => {
+const turn = (currentPlayer: Player, numberRound: 1 | 2 | 3, dice: Die[]): Player => {
 
   const tempDice: Die[] = [...dice, ...rollDice(N_DIES - dice.length)];
 
+  console.log("The dice have been rolled");
+  console.log("Their values are: ");
+  console.log(tempDice);
 
   if (numberRound !== 3) {
     const keptDice: Die[] = askDiceToKeep(tempDice);
 
     if (keptDice.length === N_DIES)
       return turn(currentPlayer, 3, keptDice);
+
+    return turn(currentPlayer, numberRound + 1 as 1 | 2 | 3, keptDice);
+
   } else {
 
     const combination: number = askCombination(currentPlayer);
@@ -363,7 +374,7 @@ const getWinner = (players: Player[]): Player[] => {
 
   return sortedByPoints
     .filter(({ player, total }: playerWScore) => total === sortedByPoints[0].total)
-    .map(({ player, score }: playerWScore): Player => player);
+    .map(({ player, total }: playerWScore): Player => player);
 }
 
 //this function manages all the middle part of the game in which players actually play
@@ -371,6 +382,12 @@ const midGame = (players: Player[], playerNumber: number, numberRound: number): 
 
   if (playerNumber === 0 && numberRound === 14)
     return getWinner(players);
+
+  if (playerNumber === 0)
+    console.log("Turn Number #" + numberRound);
+
+  console.log(players);
+  console.log("It's your turn, color " + getColor(players[playerNumber].color));
 
   const newPlayerState: Player = turn(players[playerNumber], 1, []);
 
