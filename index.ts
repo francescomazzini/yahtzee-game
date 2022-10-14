@@ -91,7 +91,7 @@ const whichDieToKeep = ([index1, ...indexes]: number[], dice: Die[]): Die[] => {
 //this function asks the user one die to keep and manages the check on the input
 const indexOfDie = (): number => {
 
-  console.log(`Which of the dice, would you like to keep? Write its number (1-5) or write 0 to stop choosing (if you don't want any, write immediately 0)`)
+  console.log(`Which of the dice, would you like to keep? Write the number of their position (1-5) or write 0 to stop choosing (if you don't want any, write immediately 0)`)
 
   const answer = input();
 
@@ -237,23 +237,30 @@ const getScoreComputation = (combination: number): fromDiceToScore => {
       return (dice: Die[]): number => dice.filter((d: Die) => d === (combination + 1)).reduce((sum: number, d: Die) => sum + d, 0);
     case 6:
     case 7:
-      return (dice: Die[]): number => {
-
-        const frequencyMap: number[] = dice.map((die: Die): number => dice.reduce((sum: number, d1: Die) => sum + d1 === die ? 1 : 0, 0));
-        const isThereAtLeastN: boolean = frequencyMap.some((n: number) => n >= (combination - 3));
-
-        return isThereAtLeastN ? dice.reduce((sum: number, d: Die) => sum + d, 0) : 0;
-      }
     case 8:
-      //posso mappare per le frequenze e fare un some se ci sta un 3 && some se ci sta un 2
-      return (dice: Die[]): number => {
+      {
 
-        ///POSSO GENERALIZZARE QUESTO FREQUENCY MAP E ISTHERE?
-        const frequencyMap: number[] = dice.map((die: Die): number => dice.reduce((sum: number, d1: Die) => sum + d1 === die ? 1 : 0, 0));
-        const isThere3: boolean = frequencyMap.some((n: number) => n === 3);
-        const isThere2: boolean = frequencyMap.some((n: number) => n === 2);
+        const frequencyMap = (dice: Die[]): number[] => dice.map((die: Die): number => dice.reduce((sum: number, d1: Die) => sum + d1 === die ? 1 : 0, 0));
 
-        return isThere3 && isThere3 ? 25 : 0;
+        switch (combination) {
+          case 6:
+          case 7:
+            return (dice: Die[]): number => {
+              const isThereAtLeastN: boolean = frequencyMap(dice).some((n: number) => n >= (combination - 3));
+              return isThereAtLeastN ? dice.reduce((sum: number, d: Die) => sum + d, 0) : 0;
+            }
+          case 8:
+            return (dice: Die[]): number => {
+
+              ///POSSO GENERALIZZARE QUESTO FREQUENCY MAP E ISTHERE?
+
+              const isThere3: boolean = frequencyMap(dice).some((n: number) => n === 3);
+              const isThere2: boolean = frequencyMap(dice).some((n: number) => n === 2);
+
+              return isThere3 && isThere3 ? 25 : 0;
+            }
+
+        }
       }
 
     //QUA POSSO GENERALIZZARE SOTTO I DUE CASE E CREARE LA FUNZIONE E PER I DUE CASE DIVERSI MODIFICARE IL PEZZETTO PASSANDO LA FUNZIONE E IL PUNTEGGIO CREDO
@@ -286,11 +293,11 @@ const getScoreComputation = (combination: number): fromDiceToScore => {
         return isSmallStr ? 30 : 0;
       }
 
-      case 11:
-        return (dice: Die[]) : number => dice.reduce((sum: number, d: Die) : number => sum + d, 0);
-      
+    case 11:
+      return (dice: Die[]): number => dice.reduce((sum: number, d: Die): number => sum + d, 0);
+
     case 12:
-      return (dice: Die[]) :number => {
+      return (dice: Die[]): number => {
         const frequencyMap: number[] = dice.map((die: Die): number => dice.reduce((sum: number, d1: Die) => sum + d1 === die ? 1 : 0, 0));
         const isThere5: boolean = frequencyMap.some((n: number) => n === 5);
 
@@ -299,16 +306,18 @@ const getScoreComputation = (combination: number): fromDiceToScore => {
 
   }
 
-  return (dice: Die[]) : number => 0;
+  return (dice: Die[]): number => 0;
 
 }
 
 //this function manages the update of the player score
-const newPlayerScore = (converter : fromDiceToScore, combination : number, {score, ...player} : Player, dice : Die[]) : Player => {
+const newPlayerScore = (converter: fromDiceToScore, combination: number, { score, ...player }: Player, dice: Die[]): Player => {
 
-  const [score[combination], ...score] = score;
-  
-  return {score: [fromDiceToScore(dice), ...score], ...player};
+  const newScore = [...score];
+
+  newScore[combination] = converter(dice);
+
+  return { score: newScore, ...player };
 }
 
 //this function manages the turn of a player in which he rolls dice
@@ -330,25 +339,75 @@ const turn = (currentPlayer: Player, numberRound: 1 | 2 | 3 /*| 4?*/, dice: Die[
 
   }
 
+  return { ...currentPlayer };
+
 }
 
-const getWinner(players: Player[]) : Player[] => {
-  return players.map((player : Player[], i : number) => ({player: player, num: i}))
+const getWinner = (players: Player[]): Player[] => {
+  // return players.map((player: Player[], i: number) => ({ player: player, num: i })).sort()//posso fare il sort sul number e poi filter dei player con il punteggio piu alto, ma devo ptims prt ciascuno calcolare il totale dei loro punti 
+
+  interface playerWScore {
+    player: Player,
+    total: number
+  }
+
+  const sortedByPoints: playerWScore[] = players
+    .map((player: Player): playerWScore =>
+    ({
+      player: player,
+      total: player.score
+        .reduce((sum: number, n: number): number => sum = sum + n, 0)
+    })
+    )
+    .sort((p1: playerWScore, p2: playerWScore) => p2.total - p1.total);
+
+  return sortedByPoints
+    .filter(({ player, total }: playerWScore) => total === sortedByPoints[0].total)
+    .map(({ player, score }: playerWScore): Player => player);
 }
 
 //this function manages all the middle part of the game in which players actually play
-const midGame = (players: Player[], playerNumber: number, numberRound: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 ): Player[] | null => {
+const midGame = (players: Player[], playerNumber: number, numberRound: number): Player[] => {
 
-  if(playerNumber === 0 && numberRound === 14 )
+  if (playerNumber === 0 && numberRound === 14)
     return getWinner(players);
 
-  const [players[playerNumber], ...players] = players;
+  const newPlayerState: Player = turn(players[playerNumber], 1, []);
 
-  const newPlayersState : Player = [turn(players[playerNumber]), 1];
+  const newPlayers: Player[] = players;
+  newPlayers[playerNumber] = newPlayerState;
 
-  const next : number = (playerNumber + 1) % players.length;
+  const next: number = (playerNumber + 1) % players.length;
 
-  return midGame(newPlayersState, next, next === 0 ? numberRound + 1 : numberRound);
+  return midGame(newPlayers, next, next === 0 ? numberRound + 1 : numberRound);
+}
+
+const getColor = (color: string): string => {
+  switch (color) {
+    case '\x1b[42m':
+      return 'GREEN';
+    case '\x1b[43m':
+      return 'YELLOW';
+    case '\x1b[44m':
+      return 'BLUE';
+    case '\x1b[45m':
+      return 'MAGENTA';
+  }
+
+  return '????'
+}
+
+const announceWinner = (players: Player[]): void => {
+
+  console.log("The game is finished.")
+
+  if (players.length === 1)
+    console.log(`...and the winner is...
+    ...COLOR ${getColor(players[0].color)}. Congratulations!`);
+  else
+    console.log(`...ugh... it seems there's a draw!
+    So the winners are...
+    ... COLOR ${players.reduce((sum: string, p: Player): string => sum = sum + ", " + getColor(p.color), '')}. Congratulations!`);
 }
 
 //this function will manage the structure of the game itself
@@ -357,7 +416,9 @@ const game = (): void => {
   const players: Player[] = startGame();
 
   //return the winner(s) or null if there's a total draw
-  const winner: Player[] | null = midGame(players, 0);
+  const winner: Player[] = midGame(players, 0, 1);
+
+  announceWinner(winner);
 
   //fai funzione announcewinner che controlla se ne e' piu' di uno con lo stesso score o solo uno e in caso scrive la cosa adatt
 }
