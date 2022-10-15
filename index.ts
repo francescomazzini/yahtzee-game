@@ -24,7 +24,7 @@ interface Score {
   name: string,
   position: number,
   value: number,
-  used: boolean
+  used: boolean //says if the combination has already been chosen
 }
 
 
@@ -39,6 +39,10 @@ interface Player {
 const N_DIES: number = 5;
 
 type Die = 1 | 2 | 3 | 4 | 5 | 6;
+
+
+
+
 
 const getNameScore = (): string[] => ["Ones", "Twos", "Threes", "Fours", "Fives",
   "Sixes", "Three of a kind", "Four of a kind", "Full house", "Small straight",
@@ -128,8 +132,6 @@ const whichDieToKeep = ([index1, ...indexes]: number[], dice: Die[]): Die[] => {
 //this function asks the user one die to keep and manages the check on the input
 const indexOfDie = (): number => {
 
-  console.log(`Which of the dice, would you like to keep? Write the number of their position (1-5) or write 0 to stop choosing (if you don't want any, write immediately 0)`)
-
   const answer = input();
 
   //VALUTA IL RAGGRUPPARE QUESTI SWITCH IN UNA FUNZIONE, MAGARI HIGH ORDER FUNCTIONS???
@@ -183,12 +185,14 @@ const indexOfDice = (counter: number, indexes: number[]): number[] => {
 //and instead they are needed from 0 to 4
 const askDiceToKeep = (dice: Die[]): Die[] => {
 
+  console.log("Choose the dice to keep writing their position (1-5) or (0) when you have finished");
   const indexDiceKeep: number[] = indexOfDice(1, []);
   const newDice: Die[] = indexDiceKeep.length === N_DIES ? dice
     : whichDieToKeep(indexDiceKeep.map((i: number) => i - 1), dice);
 
   console.log("You kept the following dice: ");
   console.log(newDice);
+  console.log();
 
   return newDice;
 
@@ -344,6 +348,8 @@ const turn = (currentPlayer: Player, numberRound: 1 | 2 | 3, dice: Die[]): Playe
 
 }
 
+const getTotalScore = (player: Player): number => player.score.reduce((sum: number, n: Score): number => sum = sum + n.value, 0)
+
 const getWinner = (players: Player[]): Player[] => {
   // return players.map((player: Player[], i: number) => ({ player: player, num: i })).sort()//posso fare il sort sul number e poi filter dei player con il punteggio piu alto, ma devo ptims prt ciascuno calcolare il totale dei loro punti 
 
@@ -356,8 +362,7 @@ const getWinner = (players: Player[]): Player[] => {
     .map((player: Player): playerWScore =>
     ({
       player: player,
-      total: player.score
-        .reduce((sum: number, n: Score): number => sum = sum + n.value, 0)
+      total: getTotalScore(player)
     })
     )
     .sort((p1: playerWScore, p2: playerWScore) => p2.total - p1.total);
@@ -367,8 +372,99 @@ const getWinner = (players: Player[]): Player[] => {
     .map(({ player, total }: playerWScore): Player => player);
 }
 
+
+
+// type Cell = number | "  ";
+
+const putChar = (num: number, char: string): string => {
+
+  let result: string = "";
+
+  for (let i = 0; i < num; i++)
+    result += char;
+
+  return result;
+}
+
+const fillChar = (num: number, name: string): string => {
+
+  let result: string = name;
+
+  if (name.length < num) {
+    result = " " + result;
+    if (name.length < num - 1)
+      result = result + putChar(num - result.length, " ")
+  }
+
+  return result;
+}
+
+const colorString = (color: string, content: string): string => `${color}${content}${Reset}`
+
+const printBoard = (players: Player[]): void => {
+
+  const N_CHAR_COL1 = 18;
+  const N_CHAR_COL2 = 9;
+
+  const separator: string = putChar(N_CHAR_COL1 + (N_CHAR_COL2 + 1) * players.length, "-");
+
+  console.clear();
+  console.log();
+
+  for (let i = 0; i < players[0].score.length + 2; i++) {
+
+    if (i === 1 || i === players[0].score.length + 1)
+      console.log(separator);
+
+    let row: string = "";
+
+    for (let j = 0; j < players.length + 1; j++) {
+
+      const indexCol = j - 1; //because the first col doesnt refer to any player
+      const indexRow = i - 1;
+
+      if (indexCol < 0)
+        if (indexRow < 0)
+          row += putChar(N_CHAR_COL1, ' ');
+        else
+          if (indexRow < players[0].score.length)
+            row += fillChar(N_CHAR_COL1, players[0].score[indexRow].name);
+          else
+            row += fillChar(N_CHAR_COL1, "TOTAL SCORE");
+      else
+        if (indexRow < 0)
+          row += colorString(players[indexCol].color, fillChar(N_CHAR_COL2, getColor(players[indexCol].color)));
+        else
+          if (indexRow < players[0].score.length)
+            //potrei colorare anche questa
+            row += fillChar(N_CHAR_COL2,
+              players[indexCol].score[indexRow].value.toString());
+          else
+            row += fillChar(N_CHAR_COL2,
+              getTotalScore(players[indexCol]).toString());
+
+      row += "|";
+
+    }
+
+    console.log(row)
+
+  }
+
+  console.log();
+  console.log();
+}
+
+
+
+
+
+
+
 //this function manages all the middle part of the game in which players actually play
 const midGame = (players: Player[], playerNumber: number, numberRound: number): Player[] => {
+
+  printBoard(players);
 
   if (playerNumber === 0 && numberRound === 14)
     return getWinner(players);
@@ -376,10 +472,6 @@ const midGame = (players: Player[], playerNumber: number, numberRound: number): 
   if (playerNumber === 0)
     console.log("Turn Number #" + numberRound);
 
-  for (let i = 0; i < players.length; i++) {
-    console.log(players[i].color);
-    console.log(players[i].score.map((s: Score) => s.value));
-  }
   console.log("It's your turn, color " + getColor(players[playerNumber].color));
 
   const newPlayerState: Player = turn(players[playerNumber], 1, []);
@@ -433,3 +525,6 @@ const game = (): void => {
 }
 
 game();
+
+
+

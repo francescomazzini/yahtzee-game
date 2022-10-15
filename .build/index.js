@@ -123,7 +123,6 @@ const whichDieToKeep = ([index1, ...indexes], dice) => {
   return [];
 };
 const indexOfDie = () => {
-  console.log(`Which of the dice, would you like to keep? Write the number of their position (1-5) or write 0 to stop choosing (if you don't want any, write immediately 0)`);
   const answer = input();
   switch (answer) {
     case "0":
@@ -158,10 +157,12 @@ const indexOfDice = (counter, indexes) => {
   return [];
 };
 const askDiceToKeep = (dice) => {
+  console.log("Choose the dice to keep writing their position (1-5) or (0) when you have finished");
   const indexDiceKeep = indexOfDice(1, []);
   const newDice = indexDiceKeep.length === N_DIES ? dice : whichDieToKeep(indexDiceKeep.map((i) => i - 1), dice);
   console.log("You kept the following dice: ");
   console.log(newDice);
+  console.log();
   return newDice;
 };
 const askCombination = (player) => {
@@ -253,22 +254,69 @@ const turn = (currentPlayer, numberRound, dice) => {
   }
   return __spreadValues({}, currentPlayer);
 };
+const getTotalScore = (player) => player.score.reduce((sum, n) => sum = sum + n.value, 0);
 const getWinner = (players) => {
   const sortedByPoints = players.map((player) => ({
     player,
-    total: player.score.reduce((sum, n) => sum = sum + n.value, 0)
+    total: getTotalScore(player)
   })).sort((p1, p2) => p2.total - p1.total);
   return sortedByPoints.filter(({ player, total }) => total === sortedByPoints[0].total).map(({ player, total }) => player);
 };
+const putChar = (num, char) => {
+  let result = "";
+  for (let i = 0; i < num; i++)
+    result += char;
+  return result;
+};
+const fillChar = (num, name) => {
+  let result = name;
+  if (name.length < num) {
+    result = " " + result;
+    if (name.length < num - 1)
+      result = result + putChar(num - result.length, " ");
+  }
+  return result;
+};
+const colorString = (color, content) => `${color}${content}${Reset}`;
+const printBoard = (players) => {
+  const N_CHAR_COL1 = 18;
+  const N_CHAR_COL2 = 9;
+  const separator = putChar(N_CHAR_COL1 + (N_CHAR_COL2 + 1) * players.length, "-");
+  console.clear();
+  console.log();
+  for (let i = 0; i < players[0].score.length + 2; i++) {
+    if (i === 1 || i === players[0].score.length + 1)
+      console.log(separator);
+    let row = "";
+    for (let j = 0; j < players.length + 1; j++) {
+      const indexCol = j - 1;
+      const indexRow = i - 1;
+      if (indexCol < 0)
+        if (indexRow < 0)
+          row += putChar(N_CHAR_COL1, " ");
+        else if (indexRow < players[0].score.length)
+          row += fillChar(N_CHAR_COL1, players[0].score[indexRow].name);
+        else
+          row += fillChar(N_CHAR_COL1, "TOTAL SCORE");
+      else if (indexRow < 0)
+        row += colorString(players[indexCol].color, fillChar(N_CHAR_COL2, getColor(players[indexCol].color)));
+      else if (indexRow < players[0].score.length)
+        row += fillChar(N_CHAR_COL2, players[indexCol].score[indexRow].value.toString());
+      else
+        row += fillChar(N_CHAR_COL2, getTotalScore(players[indexCol]).toString());
+      row += "|";
+    }
+    console.log(row);
+  }
+  console.log();
+  console.log();
+};
 const midGame = (players, playerNumber, numberRound) => {
+  printBoard(players);
   if (playerNumber === 0 && numberRound === 14)
     return getWinner(players);
   if (playerNumber === 0)
     console.log("Turn Number #" + numberRound);
-  for (let i = 0; i < players.length; i++) {
-    console.log(players[i].color);
-    console.log(players[i].score.map((s) => s.value));
-  }
   console.log("It's your turn, color " + getColor(players[playerNumber].color));
   const newPlayerState = turn(players[playerNumber], 1, []);
   const newPlayers = players;
@@ -301,7 +349,7 @@ So the winners are...
 };
 const game = () => {
   const players = startGame();
-  const winner = midGame(players, 0, 13);
+  const winner = midGame(players, 0, 1);
   announceWinner(winner);
 };
 game();
