@@ -20,6 +20,7 @@ const BgMagenta = "\x1b[45m";
 const BgCyan = "\x1b[46m";
 const BgWhite = "\x1b[47m";
 
+
 //define the player interface
 interface Player {
   //color can be green, yellow, blue or magenta
@@ -169,8 +170,6 @@ const transformCombination = (): number => {
   console.log(`Which of the combination, you'd like to assign your dice points?`)
 
   const answer = input();
-
-  //VALUTA IL RAGGRUPPARE QUESTI SWITCH IN UNA FUNZIONE, MAGARI HIGH ORDER FUNCTIONS???
 
   switch (answer) {
     case 'Ones':
@@ -414,11 +413,11 @@ const announceWinner = (players: Player[]): void => {
 
   if (players.length === 1)
     console.log(`...and the winner is...
-    ...COLOR ${getColor(players[0].color)}. Congratulations!`);
+    ...COLOR ${getColor(players[0].color)}! Congratulations!`);
   else
     console.log(`...ugh... it seems there's a draw!
-    So the winners are...
-    ... COLOR ${players.reduce((sum: string, p: Player): string => sum = sum + ", " + getColor(p.color), '')}. Congratulations!`);
+So the winners are...
+    ... COLOR ${players.reduce((sum: string, p: Player): string => sum = sum + (sum !== '' ? ", " : '') + getColor(p.color), '')}! Congratulations!`);
 }
 
 //this function will manage the structure of the game itself
@@ -427,7 +426,7 @@ const game = (): void => {
   const players: Player[] = startGame();
 
   //return the winner(s) or null if there's a total draw
-  const winner: Player[] = midGame(players, 0, 1);
+  const winner: Player[] = midGame(players, 0, 13);
 
   announceWinner(winner);
 

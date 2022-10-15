@@ -295,12 +295,12 @@ const announceWinner = (players) => {
     ...COLOR ${getColor(players[0].color)}. Congratulations!`);
   else
     console.log(`...ugh... it seems there's a draw!
-    So the winners are...
-    ... COLOR ${players.reduce((sum, p) => sum = sum + ", " + getColor(p.color), "")}. Congratulations!`);
+So the winners are...
+    ... COLOR ${players.reduce((sum, p) => sum = sum + (sum !== "" ? ", " : "") + getColor(p.color), "")}. Congratulations!`);
 };
 const game = () => {
   const players = startGame();
-  const winner = midGame(players, 0, 1);
+  const winner = midGame(players, 0, 13);
   announceWinner(winner);
 };
 game();
