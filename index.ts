@@ -191,7 +191,7 @@ const askDiceToKeep = (dice: Die[]): Die[] => {
     : whichDieToKeep(indexDiceKeep.map((i: number) => i - 1), dice);
 
   console.log("You kept the following dice: ");
-  console.log(newDice);
+  console.log(stringDice(newDice));
   console.log();
 
   return newDice;
@@ -316,6 +316,16 @@ const newPlayerScore = (converter: fromDiceToScore, combination: number, { score
   return { score: [...beforeScore, { value: converter(dice), used: true, name: currentScore.name, position: currentScore.position }, ...afterScore], ...player };
 }
 
+const stringDice = (dice: Die[]): string => {
+  let diceString: string = "";
+
+  for (let i = 0; i < dice.length; i++) {
+    diceString += `${BgWhite} ${dice[i]} ${Reset}   `
+  }
+
+  return diceString;
+}
+
 //this function manages the turn of a player in which he rolls dice
 const turn = (currentPlayer: Player, numberRound: 1 | 2 | 3, dice: Die[]): Player => {
 
@@ -324,7 +334,7 @@ const turn = (currentPlayer: Player, numberRound: 1 | 2 | 3, dice: Die[]): Playe
   if (dice.length != 5) {
     console.log("The dice have been rolled");
     console.log("Their values are: ");
-    console.log(tempDice);
+    console.log(stringDice(tempDice));
   }
 
   if (numberRound !== 3) {
@@ -435,11 +445,13 @@ const printBoard = (players: Player[]): void => {
         if (indexRow < 0)
           row += colorString(players[indexCol].color, fillChar(N_CHAR_COL2, getColor(players[indexCol].color)));
         else
-          if (indexRow < players[0].score.length)
+          if (indexRow < players[0].score.length) {
+
+            const numDisplay: string = players[indexCol].score[indexRow].value.toString();
+
             //potrei colorare anche questa
-            row += fillChar(N_CHAR_COL2,
-              players[indexCol].score[indexRow].value.toString());
-          else
+            row += !players[indexCol].score[indexRow].used ? fillChar(N_CHAR_COL2, numDisplay) : colorString(BgWhite, fillChar(N_CHAR_COL2, numDisplay));
+          } else
             row += fillChar(N_CHAR_COL2,
               getTotalScore(players[indexCol]).toString());
 

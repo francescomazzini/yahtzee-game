@@ -161,7 +161,7 @@ const askDiceToKeep = (dice) => {
   const indexDiceKeep = indexOfDice(1, []);
   const newDice = indexDiceKeep.length === N_DIES ? dice : whichDieToKeep(indexDiceKeep.map((i) => i - 1), dice);
   console.log("You kept the following dice: ");
-  console.log(newDice);
+  console.log(stringDice(newDice));
   console.log();
   return newDice;
 };
@@ -236,12 +236,19 @@ const newPlayerScore = (converter, combination, _a, dice) => {
   const currentScore = score[combination];
   return __spreadValues({ score: [...beforeScore, { value: converter(dice), used: true, name: currentScore.name, position: currentScore.position }, ...afterScore] }, player);
 };
+const stringDice = (dice) => {
+  let diceString = "";
+  for (let i = 0; i < dice.length; i++) {
+    diceString += `${BgWhite} ${dice[i]} ${Reset}   `;
+  }
+  return diceString;
+};
 const turn = (currentPlayer, numberRound, dice) => {
   const tempDice = [...dice, ...rollDice(N_DIES - dice.length)];
   if (dice.length != 5) {
     console.log("The dice have been rolled");
     console.log("Their values are: ");
-    console.log(tempDice);
+    console.log(stringDice(tempDice));
   }
   if (numberRound !== 3) {
     const keptDice = askDiceToKeep(tempDice);
@@ -300,9 +307,10 @@ const printBoard = (players) => {
           row += fillChar(N_CHAR_COL1, "TOTAL SCORE");
       else if (indexRow < 0)
         row += colorString(players[indexCol].color, fillChar(N_CHAR_COL2, getColor(players[indexCol].color)));
-      else if (indexRow < players[0].score.length)
-        row += fillChar(N_CHAR_COL2, players[indexCol].score[indexRow].value.toString());
-      else
+      else if (indexRow < players[0].score.length) {
+        const numDisplay = players[indexCol].score[indexRow].value.toString();
+        row += !players[indexCol].score[indexRow].used ? fillChar(N_CHAR_COL2, numDisplay) : colorString(BgWhite, fillChar(N_CHAR_COL2, numDisplay));
+      } else
         row += fillChar(N_CHAR_COL2, getTotalScore(players[indexCol]).toString());
       row += "|";
     }
