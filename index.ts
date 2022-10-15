@@ -257,7 +257,7 @@ const getScoreComputation = (combination: number): fromDiceToScore => {
             //so for Three of a kind the number of sam eDie has to be >= (6-3 =) 3 and for the Four od a kind, it has to be >= (7-3 = ) 4 instead
             return (dice: Die[]): number =>
               isThere(frequencyMap, (n: number) => n >= (combination - 3), dice) ? sumDice(dice) : 0;
-            //for the full house there has to be 3 of a kind and 2 of another one
+          //for the full house there has to be 3 of a kind and 2 of another one
           case 8:
             return (dice: Die[]): number =>
               isThere(frequencyMap, (n: number) => n === 3, dice) &&
@@ -297,7 +297,7 @@ const getScoreComputation = (combination: number): fromDiceToScore => {
 
     }
 
-      //chanche just sums the number of the dice
+    //chanche just sums the number of the dice
     case 11:
       return (dice: Die[]): number => sumDice(dice);
 
@@ -310,11 +310,10 @@ const getScoreComputation = (combination: number): fromDiceToScore => {
 //this function manages the update of the player score
 const newPlayerScore = (converter: fromDiceToScore, combination: number, { score, ...player }: Player, dice: Die[]): Player => {
 
-  const newScore = [...score];
+  const beforeScore: number[] = score.slice(0, combination);
+  const afterScore: number[] = score.slice(combination + 1, score.length);
 
-  newScore[combination] = converter(dice);
-
-  return { score: newScore, ...player };
+  return { score: [...beforeScore, converter(dice), ...afterScore], ...player };
 }
 
 //this function manages the turn of a player in which he rolls dice
@@ -329,8 +328,6 @@ const turn = (currentPlayer: Player, numberRound: 1 | 2 | 3, dice: Die[]): Playe
   }
 
   if (numberRound !== 3) {
-
-
 
     const keptDice: Die[] = askDiceToKeep(tempDice);
 
@@ -434,30 +431,6 @@ const game = (): void => {
 
   announceWinner(winner);
 
-  //fai funzione announcewinner che controlla se ne e' piu' di uno con lo stesso score o solo uno e in caso scrive la cosa adatt
 }
 
 game();
-
-
-
-
-
-
-// const throwDie = (): number => Math.trunc(Math.random() * 6) + 1;
-
-
-// this is a small example to show how the pieces fit together
-// const example = (): void => {
-//   console.log(`type anything to throw a die, or ${BgRed}'exit'${Reset} to quit`);
-//   const command: string = input();
-//   if (command == 'exit') {
-//     console.log(`${BgGreen}See you next time!${Reset}`);
-//   } else {
-//     const die = throwDie();
-//     console.log(`you threw: ${BgBlue} ${die} ${Reset}`);
-//     example();
-//   }
-// }
-
-// example();
