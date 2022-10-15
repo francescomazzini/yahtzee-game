@@ -20,18 +20,48 @@ const BgMagenta = "\x1b[45m";
 const BgCyan = "\x1b[46m";
 const BgWhite = "\x1b[47m";
 
+interface Score {
+  name: string,
+  position: number,
+  value: number,
+  used: boolean
+}
+
 
 //define the player interface
 interface Player {
   //color can be green, yellow, blue or magenta
   color: string,
   // color: string,
-  score: number[]
+  score: Score[]
 }
 
 const N_DIES: number = 5;
 
 type Die = 1 | 2 | 3 | 4 | 5 | 6;
+
+const getNameScore = (): string[] => ["Ones", "Twos", "Threes", "Fours", "Fives",
+  "Sixes", "Three of a kind", "Four of a kind", "Full house", "Small straight",
+  "Large straight", "Chance", "YAHTZEE"];
+
+
+//this function handles the first setup of the score
+const setUpScore = (): Score[] => {
+  const names: string[] = getNameScore();
+  const score: Score[] = [];
+
+  for (let i = 0; i < names.length; i++) {
+    score.push({
+      name: names[i],
+      value: 0,
+      used: false,
+      position: i
+    }
+    );
+  }
+
+  return score;
+}
 
 
 //this function creates the number of player wanted and set up their colors and score (default value)
@@ -42,7 +72,7 @@ const createPlayer = (numberNewPlayer: number): Player[] => {
 
   return [...createPlayer(numberNewPlayer - 1), {
     color:
-      `\x1b[4${numberNewPlayer + 1}m`, score: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      `\x1b[4${numberNewPlayer + 1}m`, score: setUpScore()
   }];
 
 }
@@ -164,61 +194,27 @@ const askDiceToKeep = (dice: Die[]): Die[] => {
 
 }
 
-//this function takes care to transform the combination chosen as a string to a number that refers to the cell of the array of the score owned by the player
-const transformCombination = (): number => {
+
+//this function takes care of all of the process of asking in which combination wants now the player put its gaines points and it also checks that the user is not trying to put the points on a combination already filled
+const askCombination = (player: Player): number => {
 
   console.log(`Which of the combination, you'd like to assign your dice points?`)
 
   const answer = input();
 
-  switch (answer) {
-    case 'Ones':
-      return 0;
-    case 'Twos':
-      return 1;
-    case 'Threes':
-      return 2;
-    case 'Fours':
-      return 3;
-    case 'Fives':
-      return 4;
-    case 'Sixes':
-      return 5;
-    case 'Three of a kind':
-      return 6;
-    case 'Four of a kind':
-      return 7;
-    case 'Full House':
-      return 8;
-    case 'Small Straight':
-      return 9;
-    case 'Large Straight':
-      return 10;
-    case 'Chance':
-      return 11;
-    case 'YAHTZEE':
-      return 12;
-    default: {
-      console.log("Invalid choice, you must use the names of the combinations, displayed in the point table");
-    }
+  const combination: Score | undefined = player.score.find((s: Score) => s.name === answer);
 
+  if (combination === undefined) {
+    console.log("Invalid choice, you must use the names of the combinations, displayed in the point table");
+    return askCombination(player);
   }
 
-  return transformCombination();
-
-}
-
-//this function takes care of all of the process of asking in which combination wants now the player put its gaines points and its main task is to check that the user is not trying to put the points on a combination already filled
-const askCombination = ({ score, ...player }: Player): number => {
-
-  const combinationChosen: number = transformCombination();
-
-  if (score[combinationChosen] !== 0) {
+  if (combination.used === true) {
     console.log("You can't assign the score to this combination because you already did in the past! Please choose another one");
-    return askCombination({ score, ...player });
+    return askCombination(player);
   }
 
-  return combinationChosen;
+  return combination.position;
 
 }
 
@@ -309,10 +305,11 @@ const getScoreComputation = (combination: number): fromDiceToScore => {
 //this function manages the update of the player score
 const newPlayerScore = (converter: fromDiceToScore, combination: number, { score, ...player }: Player, dice: Die[]): Player => {
 
-  const beforeScore: number[] = score.slice(0, combination);
-  const afterScore: number[] = score.slice(combination + 1, score.length);
+  const beforeScore: Score[] = score.slice(0, combination);
+  const afterScore: Score[] = score.slice(combination + 1, score.length);
+  const currentScore: Score = score[combination];
 
-  return { score: [...beforeScore, converter(dice), ...afterScore], ...player };
+  return { score: [...beforeScore, { value: converter(dice), used: true, name: currentScore.name, position: currentScore.position }, ...afterScore], ...player };
 }
 
 //this function manages the turn of a player in which he rolls dice
@@ -360,7 +357,7 @@ const getWinner = (players: Player[]): Player[] => {
     ({
       player: player,
       total: player.score
-        .reduce((sum: number, n: number): number => sum = sum + n, 0)
+        .reduce((sum: number, n: Score): number => sum = sum + n.value, 0)
     })
     )
     .sort((p1: playerWScore, p2: playerWScore) => p2.total - p1.total);
@@ -379,7 +376,10 @@ const midGame = (players: Player[], playerNumber: number, numberRound: number): 
   if (playerNumber === 0)
     console.log("Turn Number #" + numberRound);
 
-  console.log(players);
+  for (let i = 0; i < players.length; i++) {
+    console.log(players[i].color);
+    console.log(players[i].score.map((s: Score) => s.value));
+  }
   console.log("It's your turn, color " + getColor(players[playerNumber].color));
 
   const newPlayerState: Player = turn(players[playerNumber], 1, []);

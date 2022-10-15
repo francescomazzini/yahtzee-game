@@ -53,12 +53,40 @@ const BgMagenta = "[45m";
 const BgCyan = "[46m";
 const BgWhite = "[47m";
 const N_DIES = 5;
+const getNameScore = () => [
+  "Ones",
+  "Twos",
+  "Threes",
+  "Fours",
+  "Fives",
+  "Sixes",
+  "Three of a kind",
+  "Four of a kind",
+  "Full house",
+  "Small straight",
+  "Large straight",
+  "Chance",
+  "YAHTZEE"
+];
+const setUpScore = () => {
+  const names = getNameScore();
+  const score = [];
+  for (let i = 0; i < names.length; i++) {
+    score.push({
+      name: names[i],
+      value: 0,
+      used: false,
+      position: i
+    });
+  }
+  return score;
+};
 const createPlayer = (numberNewPlayer) => {
   if (numberNewPlayer < 1)
     return [];
   return [...createPlayer(numberNewPlayer - 1), {
     color: `[4${numberNewPlayer + 1}m`,
-    score: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    score: setUpScore()
   }];
 };
 const startGame = () => {
@@ -136,50 +164,19 @@ const askDiceToKeep = (dice) => {
   console.log(newDice);
   return newDice;
 };
-const transformCombination = () => {
+const askCombination = (player) => {
   console.log(`Which of the combination, you'd like to assign your dice points?`);
   const answer = input();
-  switch (answer) {
-    case "Ones":
-      return 0;
-    case "Twos":
-      return 1;
-    case "Threes":
-      return 2;
-    case "Fours":
-      return 3;
-    case "Fives":
-      return 4;
-    case "Sixes":
-      return 5;
-    case "Three of a kind":
-      return 6;
-    case "Four of a kind":
-      return 7;
-    case "Full House":
-      return 8;
-    case "Small Straight":
-      return 9;
-    case "Large Straight":
-      return 10;
-    case "Chance":
-      return 11;
-    case "YAHTZEE":
-      return 12;
-    default: {
-      console.log("Invalid choice, you must use the names of the combinations, displayed in the point table");
-    }
+  const combination = player.score.find((s) => s.name === answer);
+  if (combination === void 0) {
+    console.log("Invalid choice, you must use the names of the combinations, displayed in the point table");
+    return askCombination(player);
   }
-  return transformCombination();
-};
-const askCombination = (_a) => {
-  var _b = _a, { score } = _b, player = __objRest(_b, ["score"]);
-  const combinationChosen = transformCombination();
-  if (score[combinationChosen] !== 0) {
+  if (combination.used === true) {
     console.log("You can't assign the score to this combination because you already did in the past! Please choose another one");
-    return askCombination(__spreadValues({ score }, player));
+    return askCombination(player);
   }
-  return combinationChosen;
+  return combination.position;
 };
 const getScoreComputation = (combination) => {
   const sumDice = (dice) => dice.reduce((sum, d) => sum + d, 0);
@@ -231,11 +228,12 @@ const getScoreComputation = (combination) => {
   }
   return (dice) => 0;
 };
-const newPlayerScore = (converter, combination, _c, dice) => {
-  var _d = _c, { score } = _d, player = __objRest(_d, ["score"]);
+const newPlayerScore = (converter, combination, _a, dice) => {
+  var _b = _a, { score } = _b, player = __objRest(_b, ["score"]);
   const beforeScore = score.slice(0, combination);
   const afterScore = score.slice(combination + 1, score.length);
-  return __spreadValues({ score: [...beforeScore, converter(dice), ...afterScore] }, player);
+  const currentScore = score[combination];
+  return __spreadValues({ score: [...beforeScore, { value: converter(dice), used: true, name: currentScore.name, position: currentScore.position }, ...afterScore] }, player);
 };
 const turn = (currentPlayer, numberRound, dice) => {
   const tempDice = [...dice, ...rollDice(N_DIES - dice.length)];
@@ -258,7 +256,7 @@ const turn = (currentPlayer, numberRound, dice) => {
 const getWinner = (players) => {
   const sortedByPoints = players.map((player) => ({
     player,
-    total: player.score.reduce((sum, n) => sum = sum + n, 0)
+    total: player.score.reduce((sum, n) => sum = sum + n.value, 0)
   })).sort((p1, p2) => p2.total - p1.total);
   return sortedByPoints.filter(({ player, total }) => total === sortedByPoints[0].total).map(({ player, total }) => player);
 };
@@ -267,7 +265,10 @@ const midGame = (players, playerNumber, numberRound) => {
     return getWinner(players);
   if (playerNumber === 0)
     console.log("Turn Number #" + numberRound);
-  console.log(players);
+  for (let i = 0; i < players.length; i++) {
+    console.log(players[i].color);
+    console.log(players[i].score.map((s) => s.value));
+  }
   console.log("It's your turn, color " + getColor(players[playerNumber].color));
   const newPlayerState = turn(players[playerNumber], 1, []);
   const newPlayers = players;
