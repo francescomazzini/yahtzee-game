@@ -426,7 +426,7 @@ const game = (): void => {
   const players: Player[] = startGame();
 
   //return the winner(s) or null if there's a total draw
-  const winner: Player[] = midGame(players, 0, 13);
+  const winner: Player[] = midGame(players, 0, 1);
 
   announceWinner(winner);
 

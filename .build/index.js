@@ -292,11 +292,11 @@ const announceWinner = (players) => {
   console.log("The game is finished.");
   if (players.length === 1)
     console.log(`...and the winner is...
-    ...COLOR ${getColor(players[0].color)}. Congratulations!`);
+    ...COLOR ${getColor(players[0].color)}! Congratulations!`);
   else
     console.log(`...ugh... it seems there's a draw!
 So the winners are...
-    ... COLOR ${players.reduce((sum, p) => sum = sum + (sum !== "" ? ", " : "") + getColor(p.color), "")}. Congratulations!`);
+    ... COLOR ${players.reduce((sum, p) => sum = sum + (sum !== "" ? ", " : "") + getColor(p.color), "")}! Congratulations!`);
 };
 const game = () => {
   const players = startGame();
