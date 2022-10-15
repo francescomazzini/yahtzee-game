@@ -233,9 +233,9 @@ const getScoreComputation = (combination) => {
 };
 const newPlayerScore = (converter, combination, _c, dice) => {
   var _d = _c, { score } = _d, player = __objRest(_d, ["score"]);
-  const newScore = [...score];
-  newScore[combination] = converter(dice);
-  return __spreadValues({ score: newScore }, player);
+  const beforeScore = score.slice(0, combination);
+  const afterScore = score.slice(combination + 1, score.length);
+  return __spreadValues({ score: [...beforeScore, converter(dice), ...afterScore] }, player);
 };
 const turn = (currentPlayer, numberRound, dice) => {
   const tempDice = [...dice, ...rollDice(N_DIES - dice.length)];
