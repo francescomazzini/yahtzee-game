@@ -265,35 +265,29 @@ const getScoreComputation = (combination: number): fromDiceToScore => {
         }
       }
 
-    //QUA POSSO GENERALIZZARE SOTTO I DUE CASE E CREARE LA FUNZIONE E PER I DUE CASE DIVERSI MODIFICARE IL PEZZETTO PASSANDO LA FUNZIONE E IL PUNTEGGIO CREDO
     case 9:
-      return (dice: Die[]): number => {
-        const sortedDice: Die[] = [...dice].sort((a: number, b: number) => a - b)
+    case 10: {
 
-        const isSmallStr: boolean = [...new Set(sortedDice)].reduce((isIt: boolean, d: Die, i: number, ds: Die[]): boolean => {
-          if (i < ds.length - 2 && i > 0)
+      const sortedDice = (dice: Die[]) => [...dice].sort((a: number, b: number) => a - b);
+
+      const isStraight = (dice: Die[], conditionIndex: predicate<number>, conditionEdgeCase: predicate<Die[]>): boolean => {
+        return dice.reduce((isIt: boolean, d: Die, i: number, ds: Die[]): boolean => {
+          if (i < ds.length - 2 && conditionIndex(i))
             isIt = isIt && d === (ds[i + 1] - 1);
           else
-            isIt = isIt && (ds[0] === (ds[1] - 1) || ds[ds.length - 1] === (ds[ds.length - 2] + 1));
+            isIt = isIt && (conditionEdgeCase(ds) || ds[ds.length - 1] === (ds[ds.length - 2] + 1));
           return isIt && ds.length >= 4;
-        }, true)
-
-        return isSmallStr ? 30 : 0;
+        }, true);
       }
 
-    case 10:
-      return (dice: Die[]): number => {
-        const isLargeStr = [...dice].sort((a: number, b: number) => a - b).reduce((isIt: boolean, d: Die, i: number, ds: Die[]): boolean => {
-          if (i < ds.length - 2)
-            isIt = isIt && d === (ds[i + 1] - 1);
-          else
-            isIt = isIt && ds[ds.length - 1] === (ds[ds.length - 2] + 1);
-
-          return isIt;
-        }, true)
-
-        return isLargeStr ? 40 : 0;
+      switch (combination) {
+        case 9:
+          return (dice: Die[]): number => isStraight([...new Set(sortedDice(dice))], (i: number) => i > 0, (ds: Die[]) => ds[0] === (ds[1] - 1)) ? 30 : 0;
+        case 10:
+          return (dice: Die[]): number => isStraight(sortedDice(dice), (i: number) => true, (ds: Die[]) => false) ? 40 : 0;
       }
+
+    }
 
     case 11:
       return (dice: Die[]): number => sumDice(dice);

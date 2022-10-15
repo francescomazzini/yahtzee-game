@@ -208,28 +208,24 @@ const getScoreComputation = (combination) => {
       }
     }
     case 9:
-      return (dice) => {
-        const sortedDice = [...dice].sort((a, b) => a - b);
-        const isSmallStr = [...new Set(sortedDice)].reduce((isIt, d, i, ds) => {
-          if (i < ds.length - 2 && i > 0)
+    case 10: {
+      const sortedDice = (dice) => [...dice].sort((a, b) => a - b);
+      const isStraight = (dice, conditionIndex, conditionEdgeCase) => {
+        return dice.reduce((isIt, d, i, ds) => {
+          if (i < ds.length - 2 && conditionIndex(i))
             isIt = isIt && d === ds[i + 1] - 1;
           else
-            isIt = isIt && (ds[0] === ds[1] - 1 || ds[ds.length - 1] === ds[ds.length - 2] + 1);
+            isIt = isIt && (conditionEdgeCase(ds) || ds[ds.length - 1] === ds[ds.length - 2] + 1);
           return isIt && ds.length >= 4;
         }, true);
-        return isSmallStr ? 30 : 0;
       };
-    case 10:
-      return (dice) => {
-        const isLargeStr = [...dice].sort((a, b) => a - b).reduce((isIt, d, i, ds) => {
-          if (i < ds.length - 2)
-            isIt = isIt && d === ds[i + 1] - 1;
-          else
-            isIt = isIt && ds[ds.length - 1] === ds[ds.length - 2] + 1;
-          return isIt;
-        }, true);
-        return isLargeStr ? 40 : 0;
-      };
+      switch (combination) {
+        case 9:
+          return (dice) => isStraight([...new Set(sortedDice(dice))], (i) => i > 0, (ds) => ds[0] === ds[1] - 1) ? 30 : 0;
+        case 10:
+          return (dice) => isStraight(sortedDice(dice), (i) => true, (ds) => false) ? 40 : 0;
+      }
+    }
     case 11:
       return (dice) => sumDice(dice);
   }
