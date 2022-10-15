@@ -238,27 +238,31 @@ const getScoreComputation = (combination: number): fromDiceToScore => {
     case 3:
     case 4:
     case 5:
+      //return a functions that compute the sum of all the dice, after having filtered only those which are of a specific number given by the combination type
       return (dice: Die[]): number => sumDice(dice.filter((d: Die) => d === (combination + 1)));
     case 6:
     case 7:
     case 8:
     case 12:
       {
-
+        //this function maps all the dice to an array in which for each position there is the number of times that number appears in the array
         const frequencyMap: transform<Die[], number[]> = (dice: Die[]): number[] => dice.map((die: Die): number => dice.reduce((sum: number, d1: Die) => sum + (die === d1 ? 1 : 0), 0));
 
+        //this function checks if in the frequency map result there is such a number(given specifically later, also the criteria (=== or >=) is given later), meaning that a certain die is present a certain number of times in the dice array
         const isThere = (frequencyMap: transform<Die[], number[]>, condition: predicate<number>, dice: Die[]): boolean => frequencyMap(dice).some((n: number) => condition(n))
 
         switch (combination) {
           case 6:
           case 7:
+            //so for Three of a kind the number of sam eDie has to be >= (6-3 =) 3 and for the Four od a kind, it has to be >= (7-3 = ) 4 instead
             return (dice: Die[]): number =>
               isThere(frequencyMap, (n: number) => n >= (combination - 3), dice) ? sumDice(dice) : 0;
+            //for the full house there has to be 3 of a kind and 2 of another one
           case 8:
             return (dice: Die[]): number =>
               isThere(frequencyMap, (n: number) => n === 3, dice) &&
                 isThere(frequencyMap, (n: number) => n === 2, dice) ? 25 : 0;
-
+          //for the YAHTZEE there has to be 5 dice of the same number
           case 12:
             return (dice: Die[]): number =>
               isThere(frequencyMap, (n: number) => n === 5, dice) ? 50 : 0;
@@ -268,27 +272,32 @@ const getScoreComputation = (combination: number): fromDiceToScore => {
     case 9:
     case 10: {
 
+      //this function sorts the dice returning a new array (thats why [...dice] because sort() sorts in place)
       const sortedDice = (dice: Die[]) => [...dice].sort((a: number, b: number) => a - b);
-
+      //this functions checks if there are a straight line of a certain number of dice (this is given later with specific conditions, it's not very clear and abstract but these two refer to really specific cases and making them more reusable and abstract in a cleaner way would have neem to time expensive, this is anyway a way to avoid code duplication) 
       const isStraight = (dice: Die[], conditionIndex: predicate<number>, conditionEdgeCase: predicate<Die[]>): boolean => {
         return dice.reduce((isIt: boolean, d: Die, i: number, ds: Die[]): boolean => {
           if (i < ds.length - 2 && conditionIndex(i))
             isIt = isIt && d === (ds[i + 1] - 1);
           else
             isIt = isIt && (conditionEdgeCase(ds) || ds[ds.length - 1] === (ds[ds.length - 2] + 1));
+          //this check on the length is made only for the case of the small straight where removing the duplicates could cause a fake approval of the condition 
           return isIt && ds.length >= 4;
         }, true);
       }
 
       switch (combination) {
         case 9:
+          //for small straight we avoid to have the duplicates annoying the calculation using the set object instead. The condition allows to avoid to check the first and last result in a strict way, because on of the two can also not respect the criteria (since the straihgtness should be only given by at least 4 numbers)
           return (dice: Die[]): number => isStraight([...new Set(sortedDice(dice))], (i: number) => i > 0, (ds: Die[]) => ds[0] === (ds[1] - 1)) ? 30 : 0;
         case 10:
+          //here instead is more strict, therefore there cannot be duplicates, no first and last allowed to not respect the criteria
           return (dice: Die[]): number => isStraight(sortedDice(dice), (i: number) => true, (ds: Die[]) => false) ? 40 : 0;
       }
 
     }
 
+      //chanche just sums the number of the dice
     case 11:
       return (dice: Die[]): number => sumDice(dice);
 
