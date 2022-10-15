@@ -3,6 +3,11 @@ import prompt from 'prompt-sync';
 
 const input = prompt();
 
+//declared generic type of functions because for some reason they are not already present
+type transform<A, B> = (arg: A) => B;
+type predicate<A> = (arg: A) => boolean;
+type reducer<A, B> = (acc: B, val: A) => B;
+
 // these are some codes to get the console to print in colors
 // see more details here:
 // https://bit.ly/3T8YcDQ
@@ -26,6 +31,7 @@ interface Player {
 const N_DIES: number = 5;
 
 type Die = 1 | 2 | 3 | 4 | 5 | 6;
+
 
 //this function creates the number of player wanted and set up their colors and score (default value)
 const createPlayer = (numberNewPlayer: number): Player[] => {
@@ -185,9 +191,9 @@ const transformCombination = (): number => {
       return 7;
     case 'Full House':
       return 8;
-    case 'Small straight':
+    case 'Small Straight':
       return 9;
-    case 'Large straight':
+    case 'Large Straight':
       return 10;
     case 'Chance':
       return 11;
@@ -223,6 +229,8 @@ type fromDiceToScore = (arg: Die[]) => number;
 //this function will take care to convert the combination of the Dies chosen in its score
 const getScoreComputation = (combination: number): fromDiceToScore => {
 
+  const sumDice = (dice: Die[]): number => dice.reduce((sum: number, d: Die) => sum + d, 0);
+
   switch (combination) {
     case 0:
     case 1:
@@ -230,62 +238,53 @@ const getScoreComputation = (combination: number): fromDiceToScore => {
     case 3:
     case 4:
     case 5:
-      return (dice: Die[]): number => dice.filter((d: Die) => d === (combination + 1)).reduce((sum: number, d: Die) => sum + d, 0);
+      return (dice: Die[]): number => sumDice(dice.filter((d: Die) => d === (combination + 1)));
     case 6:
     case 7:
     case 8:
+    case 12:
       {
 
-        const frequencyMap = (dice: Die[]): number[] => dice.map((die: Die): number => dice.reduce((sum: number, d1: Die) => sum + d1 === die ? 1 : 0, 0));
+        const frequencyMap: transform<Die[], number[]> = (dice: Die[]): number[] => dice.map((die: Die): number => dice.reduce((sum: number, d1: Die) => sum + (die === d1 ? 1 : 0), 0));
+
+        const isThere = (frequencyMap: transform<Die[], number[]>, condition: predicate<number>, dice: Die[]): boolean => frequencyMap(dice).some((n: number) => condition(n))
 
         switch (combination) {
           case 6:
           case 7:
-            return (dice: Die[]): number => {
-              const isThereAtLeastN: boolean = frequencyMap(dice).some((n: number) => n >= (combination - 3));
-              return isThereAtLeastN ? dice.reduce((sum: number, d: Die) => sum + d, 0) : 0;
-            }
+            return (dice: Die[]): number =>
+              isThere(frequencyMap, (n: number) => n >= (combination - 3), dice) ? sumDice(dice) : 0;
           case 8:
-            return (dice: Die[]): number => {
+            return (dice: Die[]): number =>
+              isThere(frequencyMap, (n: number) => n === 3, dice) &&
+                isThere(frequencyMap, (n: number) => n === 2, dice) ? 25 : 0;
 
-              ///POSSO GENERALIZZARE QUESTO FREQUENCY MAP E ISTHERE?
-
-              const isThere3: boolean = frequencyMap(dice).some((n: number) => n === 3);
-              const isThere2: boolean = frequencyMap(dice).some((n: number) => n === 2);
-
-              return isThere3 && isThere3 ? 25 : 0;
-            }
-
+          case 12:
+            return (dice: Die[]): number =>
+              isThere(frequencyMap, (n: number) => n === 5, dice) ? 50 : 0;
         }
       }
 
     //QUA POSSO GENERALIZZARE SOTTO I DUE CASE E CREARE LA FUNZIONE E PER I DUE CASE DIVERSI MODIFICARE IL PEZZETTO PASSANDO LA FUNZIONE E IL PUNTEGGIO CREDO
     case 9:
-      //forse errori ricontrolla indici
       return (dice: Die[]): number => {
         const sortedDice: Die[] = [...dice].sort((a: number, b: number) => a - b)
 
         const isSmallStr: boolean = [...new Set(sortedDice)].reduce((isIt: boolean, d: Die, i: number, ds: Die[]): boolean => {
-          if (i < ds.length - 1 && i > 0)
+          if (i < ds.length - 2 && i > 0)
             isIt = isIt && d === (ds[i + 1] - 1);
           else
-            isIt = isIt && (ds[0] === (ds[1] - 1) || ds[ds.length - 2] === (ds[ds.length - 3] + 1) || ds[ds.length - 1] === (ds[ds.length - 2] + 1));
-          console.log(isIt)
+            isIt = isIt && (ds[0] === (ds[1] - 1) || ds[ds.length - 1] === (ds[ds.length - 2] + 1));
           return isIt && ds.length >= 4;
         }, true)
-
-        console.log(dice);
-        console.log([...dice].sort((a: number, b: number) => a - b));
-        console.log(isSmallStr);
 
         return isSmallStr ? 30 : 0;
       }
 
     case 10:
-      //forse errori ricontrolla indici
       return (dice: Die[]): number => {
         const isLargeStr = [...dice].sort((a: number, b: number) => a - b).reduce((isIt: boolean, d: Die, i: number, ds: Die[]): boolean => {
-          if (i < ds.length - 1)
+          if (i < ds.length - 2)
             isIt = isIt && d === (ds[i + 1] - 1);
           else
             isIt = isIt && ds[ds.length - 1] === (ds[ds.length - 2] + 1);
@@ -297,17 +296,7 @@ const getScoreComputation = (combination: number): fromDiceToScore => {
       }
 
     case 11:
-      //wrappa la sum con le altre funzioni che la usano
-      return (dice: Die[]): number => dice.reduce((sum: number, d: Die): number => sum + d, 0);
-
-    case 12:
-      //qua anche pensodi poter wrappare
-      return (dice: Die[]): number => {
-        const frequencyMap: number[] = dice.map((die: Die): number => dice.reduce((sum: number, d1: Die) => sum + d1 === die ? 1 : 0, 0));
-        const isThere5: boolean = frequencyMap.some((n: number) => n === 5);
-
-        return isThere5 ? 50 : 0;
-      }
+      return (dice: Die[]): number => sumDice(dice);
 
   }
 
@@ -330,11 +319,16 @@ const turn = (currentPlayer: Player, numberRound: 1 | 2 | 3, dice: Die[]): Playe
 
   const tempDice: Die[] = [...dice, ...rollDice(N_DIES - dice.length)];
 
-  console.log("The dice have been rolled");
-  console.log("Their values are: ");
-  console.log(tempDice);
+  if (dice.length != 5) {
+    console.log("The dice have been rolled");
+    console.log("Their values are: ");
+    console.log(tempDice);
+  }
 
   if (numberRound !== 3) {
+
+
+
     const keptDice: Die[] = askDiceToKeep(tempDice);
 
     if (keptDice.length === N_DIES)

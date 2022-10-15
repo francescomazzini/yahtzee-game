@@ -158,9 +158,9 @@ const transformCombination = () => {
       return 7;
     case "Full House":
       return 8;
-    case "Small straight":
+    case "Small Straight":
       return 9;
-    case "Large straight":
+    case "Large Straight":
       return 10;
     case "Chance":
       return 11;
@@ -182,6 +182,7 @@ const askCombination = (_a) => {
   return combinationChosen;
 };
 const getScoreComputation = (combination) => {
+  const sumDice = (dice) => dice.reduce((sum, d) => sum + d, 0);
   switch (combination) {
     case 0:
     case 1:
@@ -189,46 +190,39 @@ const getScoreComputation = (combination) => {
     case 3:
     case 4:
     case 5:
-      return (dice) => dice.filter((d) => d === combination + 1).reduce((sum, d) => sum + d, 0);
+      return (dice) => sumDice(dice.filter((d) => d === combination + 1));
     case 6:
     case 7:
-    case 8: {
-      const frequencyMap = (dice) => dice.map((die) => dice.reduce((sum, d1) => sum + d1 === die ? 1 : 0, 0));
+    case 8:
+    case 12: {
+      const frequencyMap = (dice) => dice.map((die) => dice.reduce((sum, d1) => sum + (die === d1 ? 1 : 0), 0));
+      const isThere = (frequencyMap2, condition, dice) => frequencyMap2(dice).some((n) => condition(n));
       switch (combination) {
         case 6:
         case 7:
-          return (dice) => {
-            const isThereAtLeastN = frequencyMap(dice).some((n) => n >= combination - 3);
-            return isThereAtLeastN ? dice.reduce((sum, d) => sum + d, 0) : 0;
-          };
+          return (dice) => isThere(frequencyMap, (n) => n >= combination - 3, dice) ? sumDice(dice) : 0;
         case 8:
-          return (dice) => {
-            const isThere3 = frequencyMap(dice).some((n) => n === 3);
-            const isThere2 = frequencyMap(dice).some((n) => n === 2);
-            return isThere3 && isThere3 ? 25 : 0;
-          };
+          return (dice) => isThere(frequencyMap, (n) => n === 3, dice) && isThere(frequencyMap, (n) => n === 2, dice) ? 25 : 0;
+        case 12:
+          return (dice) => isThere(frequencyMap, (n) => n === 5, dice) ? 50 : 0;
       }
     }
     case 9:
       return (dice) => {
         const sortedDice = [...dice].sort((a, b) => a - b);
         const isSmallStr = [...new Set(sortedDice)].reduce((isIt, d, i, ds) => {
-          if (i < ds.length - 1 && i > 0)
+          if (i < ds.length - 2 && i > 0)
             isIt = isIt && d === ds[i + 1] - 1;
           else
-            isIt = isIt && (ds[0] === ds[1] - 1 || ds[ds.length - 2] === ds[ds.length - 3] + 1 || ds[ds.length - 1] === ds[ds.length - 2] + 1);
-          console.log(isIt);
+            isIt = isIt && (ds[0] === ds[1] - 1 || ds[ds.length - 1] === ds[ds.length - 2] + 1);
           return isIt && ds.length >= 4;
         }, true);
-        console.log(dice);
-        console.log([...dice].sort((a, b) => a - b));
-        console.log(isSmallStr);
         return isSmallStr ? 30 : 0;
       };
     case 10:
       return (dice) => {
         const isLargeStr = [...dice].sort((a, b) => a - b).reduce((isIt, d, i, ds) => {
-          if (i < ds.length)
+          if (i < ds.length - 2)
             isIt = isIt && d === ds[i + 1] - 1;
           else
             isIt = isIt && ds[ds.length - 1] === ds[ds.length - 2] + 1;
@@ -237,13 +231,7 @@ const getScoreComputation = (combination) => {
         return isLargeStr ? 40 : 0;
       };
     case 11:
-      return (dice) => dice.reduce((sum, d) => sum + d, 0);
-    case 12:
-      return (dice) => {
-        const frequencyMap = dice.map((die) => dice.reduce((sum, d1) => sum + d1 === die ? 1 : 0, 0));
-        const isThere5 = frequencyMap.some((n) => n === 5);
-        return isThere5 ? 50 : 0;
-      };
+      return (dice) => sumDice(dice);
   }
   return (dice) => 0;
 };
@@ -255,9 +243,11 @@ const newPlayerScore = (converter, combination, _c, dice) => {
 };
 const turn = (currentPlayer, numberRound, dice) => {
   const tempDice = [...dice, ...rollDice(N_DIES - dice.length)];
-  console.log("The dice have been rolled");
-  console.log("Their values are: ");
-  console.log(tempDice);
+  if (dice.length != 5) {
+    console.log("The dice have been rolled");
+    console.log("Their values are: ");
+    console.log(tempDice);
+  }
   if (numberRound !== 3) {
     const keptDice = askDiceToKeep(tempDice);
     if (keptDice.length === N_DIES)
