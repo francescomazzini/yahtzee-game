@@ -261,7 +261,7 @@ const askDiceToKeep = (dice: Die[], player: Player): Die[] => {
 //this function takes care of all of the process of asking in which combination wants now the player put its gaines points and it also checks that the user is not trying to put the points on a combination already filled
 const askCombination = (player: Player): number => {
 
-  printInformation(colorString(player.color, "Which of the combination, you'd like to assign your dice points? ${Reset}"));
+  printInformation(colorString(player.color, "Which of the combination, you'd like to assign your dice points?"));
 
   const answer = input();
 

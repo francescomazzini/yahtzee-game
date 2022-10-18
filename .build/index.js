@@ -183,7 +183,7 @@ const askDiceToKeep = (dice, player) => {
   return newDice;
 };
 const askCombination = (player) => {
-  printInformation(colorString(player.color, "Which of the combination, you'd like to assign your dice points? ${Reset}"));
+  printInformation(colorString(player.color, "Which of the combination, you'd like to assign your dice points?"));
   const answer = input();
   const combination = player.score.find((s) => s.name === answer);
   if (combination === void 0) {
@@ -342,6 +342,10 @@ const prettyStringDice = (dice) => {
   }
   return diceString;
 };
+const getPointsPerCell = (player, combination, N_CHAR_COL2) => {
+  const numDisplay = player.score[combination].value.toString();
+  return !player.score[combination].used ? fillChar(N_CHAR_COL2, numDisplay) : colorString(BgWhite, fillChar(N_CHAR_COL2, numDisplay));
+};
 const generateCell = (indexCol, indexRow, players, N_CHAR_COL1, N_CHAR_COL2) => {
   let cell = "";
   if (indexCol < 0)
@@ -353,10 +357,9 @@ const generateCell = (indexCol, indexRow, players, N_CHAR_COL1, N_CHAR_COL2) => 
       cell += fillChar(N_CHAR_COL1, "TOTAL SCORE");
   else if (indexRow < 0)
     cell += colorString(players[indexCol].color, fillChar(N_CHAR_COL2, getColor(players[indexCol].color)));
-  else if (indexRow < players[0].score.length) {
-    const numDisplay = players[indexCol].score[indexRow].value.toString();
-    cell += !players[indexCol].score[indexRow].used ? fillChar(N_CHAR_COL2, numDisplay) : colorString(BgWhite, fillChar(N_CHAR_COL2, numDisplay));
-  } else
+  else if (indexRow < players[0].score.length)
+    cell += getPointsPerCell(players[indexCol], indexRow, N_CHAR_COL2);
+  else
     cell += fillChar(N_CHAR_COL2, getTotalScore(players[indexCol]).toString());
   return cell;
 };
