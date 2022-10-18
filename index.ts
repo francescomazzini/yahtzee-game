@@ -107,14 +107,32 @@ const isLargeStraight = (numPoints: number): fromDiceToScore => (dice: Die[]): n
 //chanche just sums the number of the dice
 const Chance = (): fromDiceToScore => (dice: Die[]): number => sumDice(dice);
 
-
+//this functions roll a number of dice
+const rollDice = (numberDice: number): Die[] => {
+  if (numberDice < 1)
+    return [];
+  else
+    return [(Math.trunc(Math.random() * 6) + 1) as Die, ...rollDice(numberDice - 1)];
+}
 
 //------------------------
 
-//GAME MECHANICS
+//GAME SETUP
 
 //------------------------
 
+//it creates the number of player wanted and set up their colors and score (default value)
+const createPlayer = (numberNewPlayer: number): Player[] => {
+
+  if (numberNewPlayer < 1)
+    return [];
+
+  return [...createPlayer(numberNewPlayer - 1), {
+    color:
+      `\x1b[4${numberNewPlayer + 1}m`, score: setUpScore()
+  }];
+
+}
 
 //this function handles the first setup of the score
 const setUpScore = (): Score[] => {
@@ -134,31 +152,21 @@ const setUpScore = (): Score[] => {
   return score;
 }
 
-
-//it creates the number of player wanted and set up their colors and score (default value)
-const createPlayer = (numberNewPlayer: number): Player[] => {
-
-  if (numberNewPlayer < 1)
-    return [];
-
-  return [...createPlayer(numberNewPlayer - 1), {
-    color:
-      `\x1b[4${numberNewPlayer + 1}m`, score: setUpScore()
-  }];
-
-}
-
-
 //this function will manage the setup part (beginning) of the game
 const startGame = (): Player[] => {
-
-  console.log('Welcome to Yahtzee Game!');
 
   const numberOfPlayers: number = getNumberOfPlayer();
 
   return createPlayer(numberOfPlayers);
 
 }
+
+//------------------------
+
+//GAME MECHANICS
+
+//------------------------
+
 
 //this function will manage the correctness of the input of the 
 //number of players (a value between 1-4) and return the correct value
@@ -171,18 +179,10 @@ const getNumberOfPlayer = (): number => {
     case "3": return 3
     case "4": return 4
     default: {
-      console.log("Invalid number, please choose a number of players(1-4) ")
+      printInformation("Invalid number, please choose a number of players(1-4) ")
       return getNumberOfPlayer();
     }
   }
-}
-
-//this functions roll a number of dice
-const rollDice = (numberDice: number): Die[] => {
-  if (numberDice < 1)
-    return [];
-  else
-    return [(Math.trunc(Math.random() * 6) + 1) as Die, ...rollDice(numberDice - 1)];
 }
 
 //this function recursively use the indexes to generate the new array
@@ -248,7 +248,7 @@ const indexOfDice = (counter: number, indexes: number[]): number[] => {
 //and instead they are needed from 0 to 4
 const askDiceToKeep = (dice: Die[], player: Player): Die[] => {
 
-  console.log(`${player.color}Choose the dice to keep writing their position (1-5) or (0) when you have finished ${Reset}`);
+  printInformation(colorString(player.color, "Choose the dice to keep writing their position (1-5) or (0) when you have finished"));
   const indexDiceKeep: number[] = indexOfDice(1, []);
   const newDice: Die[] = indexDiceKeep.length === N_DIES ? dice
     : whichDieToKeep(indexDiceKeep.map((i: number) => i - 1), dice);
@@ -261,19 +261,19 @@ const askDiceToKeep = (dice: Die[], player: Player): Die[] => {
 //this function takes care of all of the process of asking in which combination wants now the player put its gaines points and it also checks that the user is not trying to put the points on a combination already filled
 const askCombination = (player: Player): number => {
 
-  console.log(`${player.color} Which of the combination, you'd like to assign your dice points? ${Reset}`)
+  printInformation(colorString(player.color, "Which of the combination, you'd like to assign your dice points? ${Reset}"));
 
   const answer = input();
 
   const combination: Score | undefined = player.score.find((s: Score) => s.name === answer);
 
   if (combination === undefined) {
-    console.log("Invalid choice, you must use the names of the combinations, displayed in the point table");
+    printInformation("Invalid choice, you must use the names of the combinations, displayed in the point table");
     return askCombination(player);
   }
 
   if (combination.used === true) {
-    console.log("You can't assign the score to this combination because you already did in the past! Please choose another one");
+    printInformation("You can't assign the score to this combination because you already did in the past! Please choose another one");
     return askCombination(player);
   }
 
@@ -334,15 +334,31 @@ const newPlayerScore = (converter: fromDiceToScore, combination: number, { score
 
 }
 
-const prettyStringDice = (dice: Die[]): string => {
-  let diceString: string = "";
 
-  for (let i = 0; i < dice.length; i++) {
-    diceString += `${BgWhite} ${dice[i]} ${Reset}   `
+
+const getTotalScore = (player: Player): number => player.score.reduce((sum: number, n: Score): number => sum = sum + n.value, 0)
+
+const getWinner = (players: Player[]): Player[] => {
+
+  interface playerWScore {
+    player: Player,
+    total: number
   }
 
-  return diceString;
+  const sortedByPoints: playerWScore[] = players
+    .map((player: Player): playerWScore =>
+    ({
+      player: player,
+      total: getTotalScore(player)
+    })
+    )
+    .sort((p1: playerWScore, p2: playerWScore) => p2.total - p1.total);
+
+  return sortedByPoints
+    .filter(({ player, total }: playerWScore) => total === sortedByPoints[0].total)
+    .map(({ player, total }: playerWScore): Player => player);
 }
+
 
 //this function manages the turn of a player in which he rolls dice
 const turn = (currentPlayer: Player, numberRound: 1 | 2 | 3, dice: Die[]): Player => {
@@ -380,32 +396,11 @@ ${prettyStringDice(keptDice)}
 
 }
 
-const getTotalScore = (player: Player): number => player.score.reduce((sum: number, n: Score): number => sum = sum + n.value, 0)
+//computes who's the next player to play
+const whosNext = (playerNumber: number, nPlayers: number): number => (playerNumber + 1) % nPlayers;
 
-const getWinner = (players: Player[]): Player[] => {
-
-  interface playerWScore {
-    player: Player,
-    total: number
-  }
-
-  const sortedByPoints: playerWScore[] = players
-    .map((player: Player): playerWScore =>
-    ({
-      player: player,
-      total: getTotalScore(player)
-    })
-    )
-    .sort((p1: playerWScore, p2: playerWScore) => p2.total - p1.total);
-
-  return sortedByPoints
-    .filter(({ player, total }: playerWScore) => total === sortedByPoints[0].total)
-    .map(({ player, total }: playerWScore): Player => player);
-}
-
-
-
-
+//computes which number is the next round
+const nextRound = (playerNumber: number, currentRound: number): number => playerNumber === 0 ? currentRound + 1 : currentRound;
 
 //this function manages all the middle part of the game in which players actually play
 const midGame = (players: Player[], playerNumber: number, numberRound: number): Player[] => {
@@ -417,52 +412,23 @@ const midGame = (players: Player[], playerNumber: number, numberRound: number): 
   if (playerNumber === 0 && numberRound === 14)
     return getWinner(players);
 
-  if (playerNumber === 0)
-    console.log("Turn Number #" + numberRound);
-
-  console.log(players[playerNumber].color + "It's your turn, color " + getColor(players[playerNumber].color) + Reset);
+  printInformation(midGameScreenInformation(numberRound, players[playerNumber]));
 
   const newPlayerState: Player = turn(players[playerNumber], 1, []);
 
   const newPlayers: Player[] = players;
   newPlayers[playerNumber] = newPlayerState;
 
-  const next: number = (playerNumber + 1) % players.length;
+  const next: number = whosNext(playerNumber, players.length);
 
-  return midGame(newPlayers, next, next === 0 ? numberRound + 1 : numberRound);
-}
-
-const getColor = (color: string): string => {
-  switch (color) {
-    case '\x1b[42m':
-      return 'GREEN';
-    case '\x1b[43m':
-      return 'YELLOW';
-    case '\x1b[44m':
-      return 'BLUE';
-    case '\x1b[45m':
-      return 'MAGENTA';
-  }
-
-  return '????'
-}
-
-const announceWinner = (players: Player[]): void => {
-
-  console.log("The game is finished.")
-
-  if (players.length === 1)
-    console.log(`...and the winner is...
-    ...${players[0].color}COLOR ${getColor(players[0].color)}${Reset}! Congratulations!`);
-  else
-    console.log(`...ugh... it seems there's a draw!
-So the winners are...
-    ... COLOR ${players.reduce((sum: string, p: Player): string => sum = sum + (sum !== '' ? ", " : '') + p.color + getColor(p.color) + Reset, '')}! Congratulations!`);
+  return midGame(newPlayers, next, nextRound(next, numberRound));
 }
 
 //this function will manage the structure of the game itself
 //referring to any possible and needed state of the game
 const game = (): void => {
+
+  printInformation('Welcome to Yahtzee Game!');
 
   const players: Player[] = startGame();
 
@@ -480,6 +446,49 @@ const game = (): void => {
 
 //------------------------
 
+//gives back the information during the beginnning of the turn
+const midGameScreenInformation = (numberRound: number, player: Player): string => {
+
+  let result = "Turn Number #" + numberRound + "\n";
+
+  result += colorString(player.color, "It's your turn, color " + getColor(player.color));
+
+  return result;
+
+}
+
+//from the string code it gives the name of the color
+const getColor = (color: string): string => {
+  switch (color) {
+    case '\x1b[42m':
+      return 'GREEN';
+    case '\x1b[43m':
+      return 'YELLOW';
+    case '\x1b[44m':
+      return 'BLUE';
+    case '\x1b[45m':
+      return 'MAGENTA';
+  }
+
+  return '????'
+}
+
+//it announces the winner
+const announceWinner = (players: Player[]): void => {
+
+  printInformation("The game is finished.")
+
+  if (players.length === 1)
+    printInformation(`...and the winner is...
+    ... ` + colorString(players[0].color,
+      `COLOR ${getColor(players[0].color)}! Congratulations!`));
+  else
+    printInformation(`...ugh... it seems there's a draw!
+So the winners are...
+    ... COLOR ${players.reduce((sum: string, p: Player): string => sum = sum + (sum !== '' ? ", " : '') + colorString(p.color, getColor(p.color)), '')}! Congratulations!`);
+}
+
+//it prints on the screen
 const printInformation = (information: string) => {
   console.log(information);
 }
@@ -511,6 +520,17 @@ const fillChar = (num: number, name: string): string => {
 
 //it colors a string of the color specified
 const colorString = (color: string, content: string): string => `${color}${content}${Reset}`;
+
+//it makes the array of dice as a good looking string
+const prettyStringDice = (dice: Die[]): string => {
+  let diceString: string = "";
+
+  for (let i = 0; i < dice.length; i++) {
+    diceString += `${BgWhite} ${dice[i]} ${Reset}   `
+  }
+
+  return diceString;
+}
 
 //it generates the row to be printed
 const generateRow = (players: Player[], n_row: number, N_CHAR_COL1: number, N_CHAR_COL2: number): string => {
