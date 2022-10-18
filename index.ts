@@ -1,12 +1,24 @@
 // this is a library we need, to read text input "easily"
 import prompt from 'prompt-sync';
 
+
+//------------------------
+
+//INITIAL DECLARATIONS
+
+//------------------------
+
 const input = prompt();
 
 //declared generic type of functions because for some reason they are not already present
-type transform<A, B> = (arg: A) => B;
-type predicate<A> = (arg: A) => boolean;
-type reducer<A, B> = (acc: B, val: A) => B;
+export type transform<A, B> = (arg: A) => B;
+export type predicate<A> = (arg: A) => boolean;
+export type reducer<A, B> = (acc: B, val: A) => B;
+
+export type Die = 1 | 2 | 3 | 4 | 5 | 6;
+
+//all the functions that are going to take care to evaluate the number of points will be of the following type
+export type fromDiceToScore = (arg: Die[]) => number;
 
 // these are some codes to get the console to print in colors
 // see more details here:
@@ -38,15 +50,70 @@ interface Player {
 
 const N_DIES: number = 5;
 
-type Die = 1 | 2 | 3 | 4 | 5 | 6;
-
-
-
-
 
 const getNameScore = (): string[] => ["Ones", "Twos", "Threes", "Fours", "Fives",
   "Sixes", "Three of a kind", "Four of a kind", "Full house", "Small straight",
   "Large straight", "Chance", "YAHTZEE"];
+
+//------------------------
+
+//DICE UTILITIES
+
+//------------------------
+
+//function that sums all the dice
+const sumDice = (dice: Die[]): number => dice.reduce((sum: number, d: Die) => sum + d, 0);
+
+//this function maps all the dice to an array in which for each position there is the number of times that number appears in the array
+const frequencyMap: transform<Die[], number[]> = (dice: Die[]): number[] => dice.map((die: Die): number => dice.reduce((sum: number, d1: Die) => sum + (die === d1 ? 1 : 0), 0));
+
+//this function checks if in the frequency map result if there is such a number(given specifically later, also the criteria (=== or >=) is given later), meaning that a certain die is present a certain number of times in the dice array
+const isThere = (frequencyMap: transform<Die[], number[]>, condition: predicate<number>, dice: Die[]): boolean => frequencyMap(dice).some((n: number) => condition(n))
+
+//this function sorts the dice returning a new array (thats why [...dice] because sort() sorts in place)
+const sortedDice = (dice: Die[]) => [...dice].sort((a: number, b: number) => a - b);
+
+//this functions checks if there are a straight line of a certain number of dice (this is given later with specific conditions, it's not very clear and abstract but these two refer to really specific cases and making them more reusable and abstract in a cleaner way would have neem to time expensive, this is anyway a way to avoid code duplication) 
+const isStraight = (dice: Die[], conditionIndex: predicate<number>, conditionEdgeCase: predicate<Die[]>): boolean => {
+  return dice.reduce((isIt: boolean, d: Die, i: number, ds: Die[]): boolean => {
+    if (i < ds.length - 2 && conditionIndex(i))
+      isIt = isIt && d === (ds[i + 1] - 1);
+    else
+      isIt = isIt && (conditionEdgeCase(ds) || ds[ds.length - 1] === (ds[ds.length - 2] + 1));
+    //this check on the length is made only for the case of the small straight where removing the duplicates could cause a fake approval of the condition 
+    return isIt && ds.length >= 4;
+  }, true);
+}
+
+//return a function that computes the sum of all the dice, after having filtered only those which are of a specific number given by the combination type
+const diceSumIfNum = (num: number): fromDiceToScore => (dice: Die[]): number => sumDice(dice.filter((d: Die) => d === num));
+
+const numOfAKind = (num: number): fromDiceToScore => (dice: Die[]): number =>
+  isThere(frequencyMap, (n: number) => n >= (num), dice) ? sumDice(dice) : 0;
+
+const fullHouse = (numPoints: number): fromDiceToScore => (dice: Die[]): number =>
+  isThere(frequencyMap, (n: number) => n === 3, dice) &&
+    isThere(frequencyMap, (n: number) => n === 2, dice) ? numPoints : 0;
+
+const YAHTZEE = (numPoints: number): fromDiceToScore => (dice: Die[]): number =>
+  isThere(frequencyMap, (n: number) => n === 5, dice) ? numPoints : 0;
+
+//for small straight we avoid to have the duplicates annoying the calculation using the set object instead. The condition allows to avoid to check the first and last result in a strict way, because on of the two can also not respect the criteria (since the straihgtness should be only given by at least 4 numbers)
+const isSmallStraight = (numPoints: number): fromDiceToScore => (dice: Die[]): number => isStraight([...new Set(sortedDice(dice))], (i: number) => i > 0, (ds: Die[]) => ds[0] === (ds[1] - 1)) ? numPoints : 0;
+
+//here instead is more strict, therefore there cannot be duplicates, no first and last allowed to not respect the criteria
+const isLargeStraight = (numPoints: number): fromDiceToScore => (dice: Die[]): number => isStraight(sortedDice(dice), (i: number) => true, (ds: Die[]) => false) ? numPoints : 0;
+
+//chanche just sums the number of the dice
+const Chance = (): fromDiceToScore => (dice: Die[]): number => sumDice(dice);
+
+
+
+//------------------------
+
+//GAME MECHANICS
+
+//------------------------
 
 
 //this function handles the first setup of the score
@@ -68,7 +135,7 @@ const setUpScore = (): Score[] => {
 }
 
 
-//this function creates the number of player wanted and set up their colors and score (default value)
+//it creates the number of player wanted and set up their colors and score (default value)
 const createPlayer = (numberNewPlayer: number): Player[] => {
 
   if (numberNewPlayer < 1)
@@ -86,8 +153,6 @@ const createPlayer = (numberNewPlayer: number): Player[] => {
 const startGame = (): Player[] => {
 
   console.log('Welcome to Yahtzee Game!');
-
-  //magari dovrei separare e emettere questo in un'altra funzione per ridurre l'uso dell'interazione
 
   const numberOfPlayers: number = getNumberOfPlayer();
 
@@ -134,8 +199,6 @@ const indexOfDie = (): number => {
 
   const answer = input();
 
-  //VALUTA IL RAGGRUPPARE QUESTI SWITCH IN UNA FUNZIONE, MAGARI HIGH ORDER FUNCTIONS???
-
   switch (answer) {
     case '0':
       return 0;
@@ -150,7 +213,7 @@ const indexOfDie = (): number => {
     case '5':
       return 5;
     default: {
-      console.log("Invalid number, please choose a number between 1-5 or 0 ");
+      printInformation("Invalid number, please choose a number between 1-5 or 0 ");
     }
 
   }
@@ -170,7 +233,7 @@ const indexOfDice = (counter: number, indexes: number[]): number[] => {
   if (index !== 0) {
 
     if (indexes.some((i: number) => i === index)) {
-      console.log("You can't choose the same die twice");
+      printInformation("You can't choose the same die twice");
       return [...indexOfDice(counter, indexes)];
     } else
       return [index, ...indexOfDice(counter + 1, [index, ...indexes])];
@@ -183,16 +246,12 @@ const indexOfDice = (counter: number, indexes: number[]): number[] => {
 //this function manages the functions for deciding which die to keep. 
 //It also maps their indexes because the user inserts them from 1 to 5 
 //and instead they are needed from 0 to 4
-const askDiceToKeep = (dice: Die[]): Die[] => {
+const askDiceToKeep = (dice: Die[], player: Player): Die[] => {
 
-  console.log("Choose the dice to keep writing their position (1-5) or (0) when you have finished");
+  console.log(`${player.color}Choose the dice to keep writing their position (1-5) or (0) when you have finished ${Reset}`);
   const indexDiceKeep: number[] = indexOfDice(1, []);
   const newDice: Die[] = indexDiceKeep.length === N_DIES ? dice
     : whichDieToKeep(indexDiceKeep.map((i: number) => i - 1), dice);
-
-  console.log("You kept the following dice: ");
-  console.log(stringDice(newDice));
-  console.log();
 
   return newDice;
 
@@ -202,7 +261,7 @@ const askDiceToKeep = (dice: Die[]): Die[] => {
 //this function takes care of all of the process of asking in which combination wants now the player put its gaines points and it also checks that the user is not trying to put the points on a combination already filled
 const askCombination = (player: Player): number => {
 
-  console.log(`Which of the combination, you'd like to assign your dice points?`)
+  console.log(`${player.color} Which of the combination, you'd like to assign your dice points? ${Reset}`)
 
   const answer = input();
 
@@ -222,13 +281,9 @@ const askCombination = (player: Player): number => {
 
 }
 
-//all the functions that are going to take care to evaluate the number of points will be of the following type
-type fromDiceToScore = (arg: Die[]) => number;
 
 //this function will take care to convert the combination of the Dies chosen in its score
 const getScoreComputation = (combination: number): fromDiceToScore => {
-
-  const sumDice = (dice: Die[]): number => dice.reduce((sum: number, d: Die) => sum + d, 0);
 
   switch (combination) {
     case 0:
@@ -237,68 +292,20 @@ const getScoreComputation = (combination: number): fromDiceToScore => {
     case 3:
     case 4:
     case 5:
-      //return a functions that compute the sum of all the dice, after having filtered only those which are of a specific number given by the combination type
-      return (dice: Die[]): number => sumDice(dice.filter((d: Die) => d === (combination + 1)));
+      return diceSumIfNum(combination + 1);
     case 6:
     case 7:
+      return numOfAKind(combination - 3);
     case 8:
+      return fullHouse(25);
     case 12:
-      {
-        //this function maps all the dice to an array in which for each position there is the number of times that number appears in the array
-        const frequencyMap: transform<Die[], number[]> = (dice: Die[]): number[] => dice.map((die: Die): number => dice.reduce((sum: number, d1: Die) => sum + (die === d1 ? 1 : 0), 0));
-
-        //this function checks if in the frequency map result there is such a number(given specifically later, also the criteria (=== or >=) is given later), meaning that a certain die is present a certain number of times in the dice array
-        const isThere = (frequencyMap: transform<Die[], number[]>, condition: predicate<number>, dice: Die[]): boolean => frequencyMap(dice).some((n: number) => condition(n))
-
-        switch (combination) {
-          case 6:
-          case 7:
-            //so for Three of a kind the number of sam eDie has to be >= (6-3 =) 3 and for the Four od a kind, it has to be >= (7-3 = ) 4 instead
-            return (dice: Die[]): number =>
-              isThere(frequencyMap, (n: number) => n >= (combination - 3), dice) ? sumDice(dice) : 0;
-          //for the full house there has to be 3 of a kind and 2 of another one
-          case 8:
-            return (dice: Die[]): number =>
-              isThere(frequencyMap, (n: number) => n === 3, dice) &&
-                isThere(frequencyMap, (n: number) => n === 2, dice) ? 25 : 0;
-          //for the YAHTZEE there has to be 5 dice of the same number
-          case 12:
-            return (dice: Die[]): number =>
-              isThere(frequencyMap, (n: number) => n === 5, dice) ? 50 : 0;
-        }
-      }
-
+      return YAHTZEE(50);
     case 9:
-    case 10: {
-
-      //this function sorts the dice returning a new array (thats why [...dice] because sort() sorts in place)
-      const sortedDice = (dice: Die[]) => [...dice].sort((a: number, b: number) => a - b);
-      //this functions checks if there are a straight line of a certain number of dice (this is given later with specific conditions, it's not very clear and abstract but these two refer to really specific cases and making them more reusable and abstract in a cleaner way would have neem to time expensive, this is anyway a way to avoid code duplication) 
-      const isStraight = (dice: Die[], conditionIndex: predicate<number>, conditionEdgeCase: predicate<Die[]>): boolean => {
-        return dice.reduce((isIt: boolean, d: Die, i: number, ds: Die[]): boolean => {
-          if (i < ds.length - 2 && conditionIndex(i))
-            isIt = isIt && d === (ds[i + 1] - 1);
-          else
-            isIt = isIt && (conditionEdgeCase(ds) || ds[ds.length - 1] === (ds[ds.length - 2] + 1));
-          //this check on the length is made only for the case of the small straight where removing the duplicates could cause a fake approval of the condition 
-          return isIt && ds.length >= 4;
-        }, true);
-      }
-
-      switch (combination) {
-        case 9:
-          //for small straight we avoid to have the duplicates annoying the calculation using the set object instead. The condition allows to avoid to check the first and last result in a strict way, because on of the two can also not respect the criteria (since the straihgtness should be only given by at least 4 numbers)
-          return (dice: Die[]): number => isStraight([...new Set(sortedDice(dice))], (i: number) => i > 0, (ds: Die[]) => ds[0] === (ds[1] - 1)) ? 30 : 0;
-        case 10:
-          //here instead is more strict, therefore there cannot be duplicates, no first and last allowed to not respect the criteria
-          return (dice: Die[]): number => isStraight(sortedDice(dice), (i: number) => true, (ds: Die[]) => false) ? 40 : 0;
-      }
-
-    }
-
-    //chanche just sums the number of the dice
+      return isSmallStraight(30);
+    case 10:
+      return isLargeStraight(40);
     case 11:
-      return (dice: Die[]): number => sumDice(dice);
+      return Chance();
 
   }
 
@@ -313,10 +320,21 @@ const newPlayerScore = (converter: fromDiceToScore, combination: number, { score
   const afterScore: Score[] = score.slice(combination + 1, score.length);
   const currentScore: Score = score[combination];
 
-  return { score: [...beforeScore, { value: converter(dice), used: true, name: currentScore.name, position: currentScore.position }, ...afterScore], ...player };
+  return {
+    score: [...beforeScore,
+    {
+      value: converter(dice),
+      used: true,
+      name: currentScore.name,
+      position: currentScore.position
+    },
+    ...afterScore],
+    ...player
+  };
+
 }
 
-const stringDice = (dice: Die[]): string => {
+const prettyStringDice = (dice: Die[]): string => {
   let diceString: string = "";
 
   for (let i = 0; i < dice.length; i++) {
@@ -332,14 +350,18 @@ const turn = (currentPlayer: Player, numberRound: 1 | 2 | 3, dice: Die[]): Playe
   const tempDice: Die[] = [...dice, ...rollDice(N_DIES - dice.length)];
 
   if (dice.length != 5) {
-    console.log("The dice have been rolled");
-    console.log("Their values are: ");
-    console.log(stringDice(tempDice));
+    printInformation(`The dice have been rolled
+Their values are: 
+${prettyStringDice(tempDice)}`);
   }
 
   if (numberRound !== 3) {
 
-    const keptDice: Die[] = askDiceToKeep(tempDice);
+    const keptDice: Die[] = askDiceToKeep(tempDice, currentPlayer);
+
+    printInformation(`You kept the following dice: 
+${prettyStringDice(keptDice)}
+`);
 
     if (keptDice.length === N_DIES)
       return turn(currentPlayer, 3, keptDice);
@@ -361,7 +383,6 @@ const turn = (currentPlayer: Player, numberRound: 1 | 2 | 3, dice: Die[]): Playe
 const getTotalScore = (player: Player): number => player.score.reduce((sum: number, n: Score): number => sum = sum + n.value, 0)
 
 const getWinner = (players: Player[]): Player[] => {
-  // return players.map((player: Player[], i: number) => ({ player: player, num: i })).sort()//posso fare il sort sul number e poi filter dei player con il punteggio piu alto, ma devo ptims prt ciascuno calcolare il totale dei loro punti 
 
   interface playerWScore {
     player: Player,
@@ -384,99 +405,14 @@ const getWinner = (players: Player[]): Player[] => {
 
 
 
-// type Cell = number | "  ";
-
-const putChar = (num: number, char: string): string => {
-
-  let result: string = "";
-
-  for (let i = 0; i < num; i++)
-    result += char;
-
-  return result;
-}
-
-const fillChar = (num: number, name: string): string => {
-
-  let result: string = name;
-
-  if (name.length < num) {
-    result = " " + result;
-    if (name.length < num - 1)
-      result = result + putChar(num - result.length, " ")
-  }
-
-  return result;
-}
-
-const colorString = (color: string, content: string): string => `${color}${content}${Reset}`
-
-const printBoard = (players: Player[]): void => {
-
-  const N_CHAR_COL1 = 18;
-  const N_CHAR_COL2 = 9;
-
-  const separator: string = putChar(N_CHAR_COL1 + (N_CHAR_COL2 + 1) * players.length, "-");
-
-  console.clear();
-  console.log();
-
-  for (let i = 0; i < players[0].score.length + 2; i++) {
-
-    if (i === 1 || i === players[0].score.length + 1)
-      console.log(separator);
-
-    let row: string = "";
-
-    for (let j = 0; j < players.length + 1; j++) {
-
-      const indexCol = j - 1; //because the first col doesnt refer to any player
-      const indexRow = i - 1;
-
-      if (indexCol < 0)
-        if (indexRow < 0)
-          row += putChar(N_CHAR_COL1, ' ');
-        else
-          if (indexRow < players[0].score.length)
-            row += fillChar(N_CHAR_COL1, players[0].score[indexRow].name);
-          else
-            row += fillChar(N_CHAR_COL1, "TOTAL SCORE");
-      else
-        if (indexRow < 0)
-          row += colorString(players[indexCol].color, fillChar(N_CHAR_COL2, getColor(players[indexCol].color)));
-        else
-          if (indexRow < players[0].score.length) {
-
-            const numDisplay: string = players[indexCol].score[indexRow].value.toString();
-
-            //potrei colorare anche questa
-            row += !players[indexCol].score[indexRow].used ? fillChar(N_CHAR_COL2, numDisplay) : colorString(BgWhite, fillChar(N_CHAR_COL2, numDisplay));
-          } else
-            row += fillChar(N_CHAR_COL2,
-              getTotalScore(players[indexCol]).toString());
-
-      row += "|";
-
-    }
-
-    console.log(row)
-
-  }
-
-  console.log();
-  console.log();
-}
-
-
-
-
-
 
 
 //this function manages all the middle part of the game in which players actually play
 const midGame = (players: Player[], playerNumber: number, numberRound: number): Player[] => {
 
-  printBoard(players);
+  console.clear();
+
+  printInformation(generateBoard(players));
 
   if (playerNumber === 0 && numberRound === 14)
     return getWinner(players);
@@ -484,7 +420,7 @@ const midGame = (players: Player[], playerNumber: number, numberRound: number): 
   if (playerNumber === 0)
     console.log("Turn Number #" + numberRound);
 
-  console.log("It's your turn, color " + getColor(players[playerNumber].color));
+  console.log(players[playerNumber].color + "It's your turn, color " + getColor(players[playerNumber].color) + Reset);
 
   const newPlayerState: Player = turn(players[playerNumber], 1, []);
 
@@ -517,16 +453,17 @@ const announceWinner = (players: Player[]): void => {
 
   if (players.length === 1)
     console.log(`...and the winner is...
-    ...COLOR ${getColor(players[0].color)}! Congratulations!`);
+    ...${players[0].color}COLOR ${getColor(players[0].color)}${Reset}! Congratulations!`);
   else
     console.log(`...ugh... it seems there's a draw!
 So the winners are...
-    ... COLOR ${players.reduce((sum: string, p: Player): string => sum = sum + (sum !== '' ? ", " : '') + getColor(p.color), '')}! Congratulations!`);
+    ... COLOR ${players.reduce((sum: string, p: Player): string => sum = sum + (sum !== '' ? ", " : '') + p.color + getColor(p.color) + Reset, '')}! Congratulations!`);
 }
 
 //this function will manage the structure of the game itself
 //referring to any possible and needed state of the game
 const game = (): void => {
+
   const players: Player[] = startGame();
 
   //return the winner(s) or null if there's a total draw
@@ -536,7 +473,111 @@ const game = (): void => {
 
 }
 
-game();
 
+//------------------------
+
+//USER INTERFACE & INTERACTION 
+
+//------------------------
+
+const printInformation = (information: string) => {
+  console.log(information);
+}
+
+//return a specified number of characters in just one string
+const putChar = (num: number, char: string): string => {
+
+  let result: string = "";
+
+  for (let i = 0; i < num; i++)
+    result += char;
+
+  return result;
+}
+
+//given a string and a number, it returns that string inside the number of blank spaces specified. Considering that one is put in front of the string and the rest after
+const fillChar = (num: number, name: string): string => {
+
+  let result: string = name;
+
+  if (name.length < num) {
+    result = " " + result;
+    if (name.length < num - 1)
+      result = result + putChar(num - result.length, " ")
+  }
+
+  return result;
+}
+
+//it colors a string of the color specified
+const colorString = (color: string, content: string): string => `${color}${content}${Reset}`;
+
+//it generates the row to be printed
+const generateRow = (players: Player[], n_row: number, N_CHAR_COL1: number, N_CHAR_COL2: number): string => {
+
+  let row = "";
+
+  for (let j = 0; j < players.length + 1; j++) {
+
+    const indexCol = j - 1; //because the first col doesnt refer to any player
+    const indexRow = n_row - 1;
+
+    if (indexCol < 0)
+      if (indexRow < 0)
+        row += putChar(N_CHAR_COL1, ' ');
+      else
+        if (indexRow < players[0].score.length)
+          row += fillChar(N_CHAR_COL1, players[0].score[indexRow].name);
+        else
+          row += fillChar(N_CHAR_COL1, "TOTAL SCORE");
+    else
+      if (indexRow < 0)
+        row += colorString(players[indexCol].color, fillChar(N_CHAR_COL2, getColor(players[indexCol].color)));
+      else
+        if (indexRow < players[0].score.length) {
+
+          const numDisplay: string = players[indexCol].score[indexRow].value.toString();
+
+          row += !players[indexCol].score[indexRow].used ? fillChar(N_CHAR_COL2, numDisplay) : colorString(BgWhite, fillChar(N_CHAR_COL2, numDisplay));
+        } else
+          row += fillChar(N_CHAR_COL2,
+            getTotalScore(players[indexCol]).toString());
+
+    row += "|";
+
+  }
+
+  return row;
+
+}
+
+//it prints the board of the game
+const generateBoard = (players: Player[]): string => {
+
+  const N_CHAR_COL1: number = 18; //represent the char space of the first column part
+  const N_CHAR_COL2: number = 9; //represent the char space from the second column on
+
+  const separator: string = putChar(N_CHAR_COL1 + (N_CHAR_COL2 + 1) * players.length, "-");
+
+  let result: string = "\n";
+
+  for (let i = 0; i < players[0].score.length + 2; i++) {
+
+    if (i === 1 || i === players[0].score.length + 1)
+      result += separator + "\n";
+
+    result += generateRow(players, i, N_CHAR_COL1, N_CHAR_COL2) + "\n";
+
+  }
+
+  result += "\n\n";
+
+  return result;
+}
+
+
+//game call
+
+game();
 
 
