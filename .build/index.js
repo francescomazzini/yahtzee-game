@@ -89,6 +89,20 @@ const YAHTZEE = (numPoints) => (dice) => isThere(frequencyMap, (n) => n === 5, d
 const isSmallStraight = (numPoints) => (dice) => isStraight([...new Set(sortedDice(dice))], (i) => i > 0, (ds) => ds[0] === ds[1] - 1) ? numPoints : 0;
 const isLargeStraight = (numPoints) => (dice) => isStraight(sortedDice(dice), (i) => true, (ds) => false) ? numPoints : 0;
 const Chance = () => (dice) => sumDice(dice);
+const rollDice = (numberDice) => {
+  if (numberDice < 1)
+    return [];
+  else
+    return [Math.trunc(Math.random() * 6) + 1, ...rollDice(numberDice - 1)];
+};
+const createPlayer = (numberNewPlayer) => {
+  if (numberNewPlayer < 1)
+    return [];
+  return [...createPlayer(numberNewPlayer - 1), {
+    color: `[4${numberNewPlayer + 1}m`,
+    score: setUpScore()
+  }];
+};
 const setUpScore = () => {
   const names = getNameScore();
   const score = [];
@@ -102,16 +116,7 @@ const setUpScore = () => {
   }
   return score;
 };
-const createPlayer = (numberNewPlayer) => {
-  if (numberNewPlayer < 1)
-    return [];
-  return [...createPlayer(numberNewPlayer - 1), {
-    color: `[4${numberNewPlayer + 1}m`,
-    score: setUpScore()
-  }];
-};
 const startGame = () => {
-  console.log("Welcome to Yahtzee Game!");
   const numberOfPlayers = getNumberOfPlayer();
   return createPlayer(numberOfPlayers);
 };
@@ -127,16 +132,10 @@ const getNumberOfPlayer = () => {
     case "4":
       return 4;
     default: {
-      console.log("Invalid number, please choose a number of players(1-4) ");
+      printInformation("Invalid number, please choose a number of players(1-4) ");
       return getNumberOfPlayer();
     }
   }
-};
-const rollDice = (numberDice) => {
-  if (numberDice < 1)
-    return [];
-  else
-    return [Math.trunc(Math.random() * 6) + 1, ...rollDice(numberDice - 1)];
 };
 const whichDieToKeep = ([index1, ...indexes], dice) => {
   if (index1 !== void 0)
@@ -159,7 +158,7 @@ const indexOfDie = () => {
     case "5":
       return 5;
     default: {
-      console.log("Invalid number, please choose a number between 1-5 or 0 ");
+      printInformation("Invalid number, please choose a number between 1-5 or 0 ");
     }
   }
   return indexOfDie();
@@ -170,7 +169,7 @@ const indexOfDice = (counter, indexes) => {
   const index = indexOfDie();
   if (index !== 0) {
     if (indexes.some((i) => i === index)) {
-      console.log("You can't choose the same die twice");
+      printInformation("You can't choose the same die twice");
       return [...indexOfDice(counter, indexes)];
     } else
       return [index, ...indexOfDice(counter + 1, [index, ...indexes])];
@@ -178,21 +177,21 @@ const indexOfDice = (counter, indexes) => {
   return [];
 };
 const askDiceToKeep = (dice, player) => {
-  console.log(`${player.color}Choose the dice to keep writing their position (1-5) or (0) when you have finished ${Reset}`);
+  printInformation(colorString(player.color, "Choose the dice to keep writing their position (1-5) or (0) when you have finished"));
   const indexDiceKeep = indexOfDice(1, []);
   const newDice = indexDiceKeep.length === N_DIES ? dice : whichDieToKeep(indexDiceKeep.map((i) => i - 1), dice);
   return newDice;
 };
 const askCombination = (player) => {
-  console.log(`${player.color} Which of the combination, you'd like to assign your dice points? ${Reset}`);
+  printInformation(colorString(player.color, "Which of the combination, you'd like to assign your dice points? ${Reset}"));
   const answer = input();
   const combination = player.score.find((s) => s.name === answer);
   if (combination === void 0) {
-    console.log("Invalid choice, you must use the names of the combinations, displayed in the point table");
+    printInformation("Invalid choice, you must use the names of the combinations, displayed in the point table");
     return askCombination(player);
   }
   if (combination.used === true) {
-    console.log("You can't assign the score to this combination because you already did in the past! Please choose another one");
+    printInformation("You can't assign the score to this combination because you already did in the past! Please choose another one");
     return askCombination(player);
   }
   return combination.position;
@@ -240,12 +239,13 @@ const newPlayerScore = (converter, combination, _a, dice) => {
     ]
   }, player);
 };
-const prettyStringDice = (dice) => {
-  let diceString = "";
-  for (let i = 0; i < dice.length; i++) {
-    diceString += `${BgWhite} ${dice[i]} ${Reset}   `;
-  }
-  return diceString;
+const getTotalScore = (player) => player.score.reduce((sum, n) => sum = sum + n.value, 0);
+const getWinner = (players) => {
+  const sortedByPoints = players.map((player) => ({
+    player,
+    total: getTotalScore(player)
+  })).sort((p1, p2) => p2.total - p1.total);
+  return sortedByPoints.filter(({ player, total }) => total === sortedByPoints[0].total).map(({ player, total }) => player);
 };
 const turn = (currentPlayer, numberRound, dice) => {
   const tempDice = [...dice, ...rollDice(N_DIES - dice.length)];
@@ -268,27 +268,30 @@ ${prettyStringDice(keptDice)}
   }
   return __spreadValues({}, currentPlayer);
 };
-const getTotalScore = (player) => player.score.reduce((sum, n) => sum = sum + n.value, 0);
-const getWinner = (players) => {
-  const sortedByPoints = players.map((player) => ({
-    player,
-    total: getTotalScore(player)
-  })).sort((p1, p2) => p2.total - p1.total);
-  return sortedByPoints.filter(({ player, total }) => total === sortedByPoints[0].total).map(({ player, total }) => player);
-};
+const whosNext = (playerNumber, nPlayers) => (playerNumber + 1) % nPlayers;
+const nextRound = (playerNumber, currentRound) => playerNumber === 0 ? currentRound + 1 : currentRound;
 const midGame = (players, playerNumber, numberRound) => {
   console.clear();
   printInformation(generateBoard(players));
   if (playerNumber === 0 && numberRound === 14)
     return getWinner(players);
-  if (playerNumber === 0)
-    console.log("Turn Number #" + numberRound);
-  console.log(players[playerNumber].color + "It's your turn, color " + getColor(players[playerNumber].color) + Reset);
+  printInformation(midGameScreenInformation(numberRound, players[playerNumber]));
   const newPlayerState = turn(players[playerNumber], 1, []);
   const newPlayers = players;
   newPlayers[playerNumber] = newPlayerState;
-  const next = (playerNumber + 1) % players.length;
-  return midGame(newPlayers, next, next === 0 ? numberRound + 1 : numberRound);
+  const next = whosNext(playerNumber, players.length);
+  return midGame(newPlayers, next, nextRound(next, numberRound));
+};
+const game = () => {
+  printInformation("Welcome to Yahtzee Game!");
+  const players = startGame();
+  const winner = midGame(players, 0, 1);
+  announceWinner(winner);
+};
+const midGameScreenInformation = (numberRound, player) => {
+  let result = "Turn Number #" + numberRound + "\n";
+  result += colorString(player.color, "It's your turn, color " + getColor(player.color));
+  return result;
 };
 const getColor = (color) => {
   switch (color) {
@@ -304,19 +307,14 @@ const getColor = (color) => {
   return "????";
 };
 const announceWinner = (players) => {
-  console.log("The game is finished.");
+  printInformation("The game is finished.");
   if (players.length === 1)
-    console.log(`...and the winner is...
-    ...${players[0].color}COLOR ${getColor(players[0].color)}${Reset}! Congratulations!`);
+    printInformation(`...and the winner is...
+    ... ` + colorString(players[0].color, `COLOR ${getColor(players[0].color)}! Congratulations!`));
   else
-    console.log(`...ugh... it seems there's a draw!
+    printInformation(`...ugh... it seems there's a draw!
 So the winners are...
-    ... COLOR ${players.reduce((sum, p) => sum = sum + (sum !== "" ? ", " : "") + p.color + getColor(p.color) + Reset, "")}! Congratulations!`);
-};
-const game = () => {
-  const players = startGame();
-  const winner = midGame(players, 0, 1);
-  announceWinner(winner);
+    ... COLOR ${players.reduce((sum, p) => sum = sum + (sum !== "" ? ", " : "") + colorString(p.color, getColor(p.color)), "")}! Congratulations!`);
 };
 const printInformation = (information) => {
   console.log(information);
@@ -337,25 +335,37 @@ const fillChar = (num, name) => {
   return result;
 };
 const colorString = (color, content) => `${color}${content}${Reset}`;
+const prettyStringDice = (dice) => {
+  let diceString = "";
+  for (let i = 0; i < dice.length; i++) {
+    diceString += `${BgWhite} ${dice[i]} ${Reset}   `;
+  }
+  return diceString;
+};
+const generateCell = (indexCol, indexRow, players, N_CHAR_COL1, N_CHAR_COL2) => {
+  let cell = "";
+  if (indexCol < 0)
+    if (indexRow < 0)
+      cell += putChar(N_CHAR_COL1, " ");
+    else if (indexRow < players[0].score.length)
+      cell += fillChar(N_CHAR_COL1, players[0].score[indexRow].name);
+    else
+      cell += fillChar(N_CHAR_COL1, "TOTAL SCORE");
+  else if (indexRow < 0)
+    cell += colorString(players[indexCol].color, fillChar(N_CHAR_COL2, getColor(players[indexCol].color)));
+  else if (indexRow < players[0].score.length) {
+    const numDisplay = players[indexCol].score[indexRow].value.toString();
+    cell += !players[indexCol].score[indexRow].used ? fillChar(N_CHAR_COL2, numDisplay) : colorString(BgWhite, fillChar(N_CHAR_COL2, numDisplay));
+  } else
+    cell += fillChar(N_CHAR_COL2, getTotalScore(players[indexCol]).toString());
+  return cell;
+};
 const generateRow = (players, n_row, N_CHAR_COL1, N_CHAR_COL2) => {
   let row = "";
   for (let j = 0; j < players.length + 1; j++) {
     const indexCol = j - 1;
     const indexRow = n_row - 1;
-    if (indexCol < 0)
-      if (indexRow < 0)
-        row += putChar(N_CHAR_COL1, " ");
-      else if (indexRow < players[0].score.length)
-        row += fillChar(N_CHAR_COL1, players[0].score[indexRow].name);
-      else
-        row += fillChar(N_CHAR_COL1, "TOTAL SCORE");
-    else if (indexRow < 0)
-      row += colorString(players[indexCol].color, fillChar(N_CHAR_COL2, getColor(players[indexCol].color)));
-    else if (indexRow < players[0].score.length) {
-      const numDisplay = players[indexCol].score[indexRow].value.toString();
-      row += !players[indexCol].score[indexRow].used ? fillChar(N_CHAR_COL2, numDisplay) : colorString(BgWhite, fillChar(N_CHAR_COL2, numDisplay));
-    } else
-      row += fillChar(N_CHAR_COL2, getTotalScore(players[indexCol]).toString());
+    row += generateCell(indexCol, indexRow, players, N_CHAR_COL1, N_CHAR_COL2);
     row += "|";
   }
   return row;

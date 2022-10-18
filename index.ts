@@ -532,6 +532,41 @@ const prettyStringDice = (dice: Die[]): string => {
   return diceString;
 }
 
+//returns the number of points to put for the cell of the combination for the player requested
+const getPointsPerCell = (player: Player, combination: number, N_CHAR_COL2: number): string => {
+
+  const numDisplay: string = player.score[combination].value.toString();
+
+  return !player.score[combination].used ? fillChar(N_CHAR_COL2, numDisplay) : colorString(BgWhite, fillChar(N_CHAR_COL2, numDisplay));
+
+}
+
+//it generates the cell to be placed based on which number it is now
+const generateCell = (indexCol: number, indexRow: number, players: Player[], N_CHAR_COL1: number, N_CHAR_COL2: number): string => {
+
+  let cell = "";
+
+  if (indexCol < 0)
+    if (indexRow < 0)
+      cell += putChar(N_CHAR_COL1, ' ');
+    else
+      if (indexRow < players[0].score.length)
+        cell += fillChar(N_CHAR_COL1, players[0].score[indexRow].name);
+      else
+        cell += fillChar(N_CHAR_COL1, "TOTAL SCORE");
+  else
+    if (indexRow < 0)
+      cell += colorString(players[indexCol].color, fillChar(N_CHAR_COL2, getColor(players[indexCol].color)));
+    else
+      if (indexRow < players[0].score.length)
+        cell += getPointsPerCell(players[indexCol], indexRow, N_CHAR_COL2);
+      else
+        cell += fillChar(N_CHAR_COL2,
+          getTotalScore(players[indexCol]).toString());
+
+  return cell;
+}
+
 //it generates the row to be printed
 const generateRow = (players: Player[], n_row: number, N_CHAR_COL1: number, N_CHAR_COL2: number): string => {
 
@@ -542,26 +577,7 @@ const generateRow = (players: Player[], n_row: number, N_CHAR_COL1: number, N_CH
     const indexCol = j - 1; //because the first col doesnt refer to any player
     const indexRow = n_row - 1;
 
-    if (indexCol < 0)
-      if (indexRow < 0)
-        row += putChar(N_CHAR_COL1, ' ');
-      else
-        if (indexRow < players[0].score.length)
-          row += fillChar(N_CHAR_COL1, players[0].score[indexRow].name);
-        else
-          row += fillChar(N_CHAR_COL1, "TOTAL SCORE");
-    else
-      if (indexRow < 0)
-        row += colorString(players[indexCol].color, fillChar(N_CHAR_COL2, getColor(players[indexCol].color)));
-      else
-        if (indexRow < players[0].score.length) {
-
-          const numDisplay: string = players[indexCol].score[indexRow].value.toString();
-
-          row += !players[indexCol].score[indexRow].used ? fillChar(N_CHAR_COL2, numDisplay) : colorString(BgWhite, fillChar(N_CHAR_COL2, numDisplay));
-        } else
-          row += fillChar(N_CHAR_COL2,
-            getTotalScore(players[indexCol]).toString());
+    row += generateCell(indexCol, indexRow, players, N_CHAR_COL1, N_CHAR_COL2);
 
     row += "|";
 
