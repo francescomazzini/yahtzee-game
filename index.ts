@@ -32,6 +32,7 @@ const BgMagenta = "\x1b[45m";
 const BgCyan = "\x1b[46m";
 const BgWhite = "\x1b[47m";
 
+//represents the structure of the score (name, position in the array, value of points assigned, already chosen or not by the player)
 interface Score {
   name: string,
   position: number,
@@ -39,12 +40,10 @@ interface Score {
   used: boolean //says if the combination has already been chosen
 }
 
-
 //define the player interface
 interface Player {
   //color can be green, yellow, blue or magenta
   color: string,
-  // color: string,
   score: Score[]
 }
 
@@ -73,7 +72,7 @@ const isThere = (frequencyMap: transform<Die[], number[]>, condition: predicate<
 //this function sorts the dice returning a new array (thats why [...dice] because sort() sorts in place)
 const sortedDice = (dice: Die[]) => [...dice].sort((a: number, b: number) => a - b);
 
-//this functions checks if there are a straight line of a certain number of dice (this is given later with specific conditions, it's not very clear and abstract but these two refer to really specific cases and making them more reusable and abstract in a cleaner way would have neem to time expensive, this is anyway a way to avoid code duplication) 
+//this function checks if there are a straight line of a certain number of dice (this is given later with specific conditions, it's not very clear and abstract but these two refer to really specific cases and making them more reusable and abstract in a cleaner way would have needed other time, this is anyway a way to avoid code duplication) 
 const isStraight = (dice: Die[], conditionIndex: predicate<number>, conditionEdgeCase: predicate<Die[]>): boolean => {
   return dice.reduce((isIt: boolean, d: Die, i: number, ds: Die[]): boolean => {
     if (i < ds.length - 2 && conditionIndex(i))
@@ -98,7 +97,7 @@ const fullHouse = (numPoints: number): fromDiceToScore => (dice: Die[]): number 
 const YAHTZEE = (numPoints: number): fromDiceToScore => (dice: Die[]): number =>
   isThere(frequencyMap, (n: number) => n === 5, dice) ? numPoints : 0;
 
-//for small straight we avoid to have the duplicates annoying the calculation using the set object instead. The condition allows to avoid to check the first and last result in a strict way, because on of the two can also not respect the criteria (since the straihgtness should be only given by at least 4 numbers)
+//for small straight we avoid to have the duplicates annoying the calculation using the set object instead. The condition allows to avoid to check the first and last result in a strict way, because one of the two can also not respect the criteria (since the straihgtness should be only given by at least 4 numbers)
 const isSmallStraight = (numPoints: number): fromDiceToScore => (dice: Die[]): number => isStraight([...new Set(sortedDice(dice))], (i: number) => i > 0, (ds: Die[]) => ds[0] === (ds[1] - 1)) ? numPoints : 0;
 
 //here instead is more strict, therefore there cannot be duplicates, no first and last allowed to not respect the criteria
@@ -258,7 +257,7 @@ const askDiceToKeep = (dice: Die[], player: Player): Die[] => {
 }
 
 
-//this function takes care of all of the process of asking in which combination wants now the player put its gaines points and it also checks that the user is not trying to put the points on a combination already filled
+//it asks the user which combination he/she wants to assign points to
 const askCombination = (player: Player): number => {
 
   printInformation(colorString(player.color, "Which of the combination, you'd like to assign your dice points?"));
@@ -282,7 +281,7 @@ const askCombination = (player: Player): number => {
 }
 
 
-//this function will take care to convert the combination of the Dies chosen in its score
+//this function will take care to convert the combination of the dice chosen in its score
 const getScoreComputation = (combination: number): fromDiceToScore => {
 
   switch (combination) {
@@ -334,29 +333,33 @@ const newPlayerScore = (converter: fromDiceToScore, combination: number, { score
 
 }
 
-
-
+//returns the total score of a player
 const getTotalScore = (player: Player): number => player.score.reduce((sum: number, n: Score): number => sum = sum + n.value, 0)
 
+//temporary objects for determinating which player has the highest total score
+interface PlayerAndScore {
+  player: Player,
+  total: number
+}
+
+//it sorts the player by their points gathering them first in this special temporary data structure PlayerAndScore
+const sortPlayersByPoints = (players: Player[]) : PlayerAndScore[] => players
+  .map((player: Player): PlayerAndScore =>
+  ({
+    player: player,
+    total: getTotalScore(player)
+  })
+  )
+  .sort((p1: PlayerAndScore, p2: PlayerAndScore) => p2.total - p1.total);
+
+//return a winner or more if there's a draw
 const getWinner = (players: Player[]): Player[] => {
 
-  interface playerWScore {
-    player: Player,
-    total: number
-  }
-
-  const sortedByPoints: playerWScore[] = players
-    .map((player: Player): playerWScore =>
-    ({
-      player: player,
-      total: getTotalScore(player)
-    })
-    )
-    .sort((p1: playerWScore, p2: playerWScore) => p2.total - p1.total);
-
-  return sortedByPoints
-    .filter(({ player, total }: playerWScore) => total === sortedByPoints[0].total)
-    .map(({ player, total }: playerWScore): Player => player);
+  const sortedPlayersWPoints : PlayerAndScore[] = sortPlayersByPoints(players);
+  
+  return sortedPlayersWPoints
+    .filter(({ player, total }: PlayerAndScore) => total === sortedByPoints[0].total)
+    .map(({ player, total }: PlayerAndScore): Player => player);
 }
 
 
