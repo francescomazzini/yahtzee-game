@@ -343,7 +343,7 @@ interface PlayerAndScore {
 }
 
 //it sorts the player by their points gathering them first in this special temporary data structure PlayerAndScore
-const sortPlayersByPoints = (players: Player[]) : PlayerAndScore[] => players
+const sortPlayersByPoints = (players: Player[]): PlayerAndScore[] => players
   .map((player: Player): PlayerAndScore =>
   ({
     player: player,
@@ -355,10 +355,10 @@ const sortPlayersByPoints = (players: Player[]) : PlayerAndScore[] => players
 //return a winner or more if there's a draw
 const getWinner = (players: Player[]): Player[] => {
 
-  const sortedPlayersWPoints : PlayerAndScore[] = sortPlayersByPoints(players);
-  
+  const sortedPlayersWPoints: PlayerAndScore[] = sortPlayersByPoints(players);
+
   return sortedPlayersWPoints
-    .filter(({ player, total }: PlayerAndScore) => total === sortedByPoints[0].total)
+    .filter(({ player, total }: PlayerAndScore) => total === sortedPlayersWPoints[0].total)
     .map(({ player, total }: PlayerAndScore): Player => player);
 }
 

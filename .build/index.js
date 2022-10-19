@@ -240,12 +240,13 @@ const newPlayerScore = (converter, combination, _a, dice) => {
   }, player);
 };
 const getTotalScore = (player) => player.score.reduce((sum, n) => sum = sum + n.value, 0);
+const sortPlayersByPoints = (players) => players.map((player) => ({
+  player,
+  total: getTotalScore(player)
+})).sort((p1, p2) => p2.total - p1.total);
 const getWinner = (players) => {
-  const sortedByPoints = players.map((player) => ({
-    player,
-    total: getTotalScore(player)
-  })).sort((p1, p2) => p2.total - p1.total);
-  return sortedByPoints.filter(({ player, total }) => total === sortedByPoints[0].total).map(({ player, total }) => player);
+  const sortedPlayersWPoints = sortPlayersByPoints(players);
+  return sortedPlayersWPoints.filter(({ player, total }) => total === sortedPlayersWPoints[0].total).map(({ player, total }) => player);
 };
 const turn = (currentPlayer, numberRound, dice) => {
   const tempDice = [...dice, ...rollDice(N_DIES - dice.length)];
